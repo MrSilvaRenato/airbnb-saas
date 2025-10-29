@@ -16,10 +16,19 @@ class HostDashboardController extends Controller
         // ---------------------------------
         // 1. Current user context
         // ---------------------------------
-        $user      = $request->user();
-        $userId    = $user->id;
-        $userPlan  = $user->plan ?? 'free'; // 'free' | 'pro'
-        $override  = $user->properties_limit_override; // nullable int
+       $user = $request->user();
+
+    // 👇 DEV-ONLY safety – immediately mark user pro *if* they just upgraded.
+    // In production you rely on the webhook to do this, so we guard by env().
+    if ($request->boolean('upgraded') && app()->environment('local')) {
+        $user->plan = 'pro';
+        $user->stripe_status = 'active';
+        $user->save();
+    }
+
+    $userId    = $user->id;
+    $userPlan  = $user->plan ?? 'free';
+    $override  = $user->properties_limit_override;
 
         // ---------------------------------
         // 2. Filters / sorting / pagination
@@ -91,34 +100,39 @@ class HostDashboardController extends Controller
         // ---------------------------------
         // 5. Return to Inertia with new props
         // ---------------------------------
-        return Inertia::render('Host/Dashboard', [
-            'properties' => $props,
+    return Inertia::render('Host/Dashboard', [
+    'properties' => $props,
 
-            'totals' => [
-                'properties' => $propertyCount,
-                'packages'   => $totalPackages,
-                'visits'     => $totalVisits,
-                'visits7d'   => $totalVisits7d,
-            ],
+    'totals' => [
+        'properties' => $propertyCount,
+        'packages'   => $totalPackages,
+        'visits'     => $totalVisits,
+        'visits7d'   => $totalVisits7d,
+    ],
 
-            'filters' => [
-                'q'       => $q,
-                'sort'    => $sort,
-                'perPage' => $perPage,
-            ],
+    'filters' => [
+        'q'       => $q,
+        'sort'    => $sort,
+        'perPage' => $perPage,
+    ],
 
-            // 🔥 NEW: info for UI gating and upsell
-            'userMeta' => [
-                'plan' => $userPlan,
-            ],
-            'limits' => [
-                'canCreateProperty' => $canCreateProperty,
-                'canCreateStay'     => $canCreateStay,
-                'propertyLimit'     => $propertyLimit,
-                'propertyCount'     => $propertyCount,
-                'activeStayCount'   => $activeStayCount,
-                'stayLimit'         => $stayLimit,
-            ],
-        ]);
+    // 🔥 info for UI gating / banners
+    'userMeta' => [
+        'plan'       => $userPlan, // 'free' | 'pro'
+        'first_name' => explode(' ', $request->user()->name ?? '')[0] ?? 'Host',
+    ],
+
+    'limits' => [
+        'canCreateProperty' => $canCreateProperty,
+        'canCreateStay'     => $canCreateStay,
+        'propertyLimit'     => $propertyLimit,
+        'propertyCount'     => $propertyCount,
+        'activeStayCount'   => $activeStayCount,
+        'stayLimit'         => $stayLimit,
+    ],
+
+    // 👇 lets us show the green success banner once
+    'recentlyUpgraded' => $request->boolean('upgraded', false),
+]);
     }
 }

@@ -20,6 +20,19 @@ class Property extends Model
     'brand_display_name',
     'brand_contact_label',
     'brand_logo_path',
+    
+       // guest-facing defaults for future stays
+        'default_host_phone',
+        'default_smart_lock_code',
+        'default_arrival_tips',
+        'default_parking_info',
+        'default_emergency_info',
+        'default_rules_summary',
+        'default_garbage_recycling',
+        'default_appliances_notes',
+        'default_safety_notes',
+        'default_checkout_list',
+
     ];
 
     /*

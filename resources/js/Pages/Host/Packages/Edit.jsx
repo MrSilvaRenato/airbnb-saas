@@ -315,7 +315,7 @@ export default function Edit() {
           </div>
         </div>
 
-        {/* arrival instructions / emergency info */}
+        {/* arrival instructions / emergency info
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 mb-1">Arrival / how to find it</label>
@@ -344,7 +344,7 @@ export default function Edit() {
               <div className="text-xs text-red-600">{metaErrors.emergency_info}</div>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* price */}
         <div className="flex flex-col max-w-xs">
@@ -383,9 +383,21 @@ export default function Edit() {
       {/* 2. ADD NEW SECTION */}
       <form
         onSubmit={addSection}
-        className="rounded-2xl border bg-white p-4 space-y-3 mb-8"
+className="
+  rounded-2xl
+  border
+  border-gray-300
+  bg-gray-100
+  shadow-[0_20px_60px_rgba(0,0,0,0.5)]
+  p-4
+  space-y-3
+  mb-8
+"
+
+
+
       >
-        <div className="text-sm font-semibold text-gray-800">Add a Section</div>
+        <div className="text-sm font-semibold  text-red-400">Add a Section</div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col col-span-1">
@@ -400,6 +412,7 @@ export default function Edit() {
               <option value="guide">Guide</option>
               <option value="faq">FAQ</option>
               <option value="contact">Contact</option>
+              <option value="other">Other</option>
             </select>
             {sectionErrors.type && (
               <div className="text-xs text-red-600">{sectionErrors.type}</div>
@@ -466,6 +479,7 @@ export default function Edit() {
                       <option value="guide">Guide</option>
                       <option value="faq">FAQ</option>
                       <option value="contact">Contact</option>
+                      <option value="Other">Other</option>
                     </select>
                   </div>
 

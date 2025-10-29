@@ -1,5 +1,5 @@
   import React from 'react'
-  import { Head, Link, useForm, usePage } from '@inertiajs/react'
+  import { Head, useForm, router, Link, usePage} from '@inertiajs/react'
   import Shell from '@/Layouts/Shell'
 
   export default function Edit() {
@@ -43,7 +43,11 @@
     }
 
     const hasAnyErrors = Object.keys(errors || {}).length > 0
-
+  // 🔥 Stripe upgrade handler
+function handleUpgradeClick() {
+  // just navigate to the comparison/upgrade page
+  router.visit(route('checkout.show')); // <-- whatever route name you used for CheckoutPageController@show
+}
     return (
       <Shell title="Edit Property">
         <Head title="Edit Property" />
@@ -487,8 +491,16 @@
               <div className="font-semibold text-gray-900 text-sm mb-1">
                 Branding (Pro)
               </div>
+              <div className="text-yellow-700 mb-3"> 
               Add your logo and concierge-style header to the guest welcome link.
               Upgrade to Pro to enable.
+            </div>
+               <button
+            onClick={handleUpgradeClick}
+            className="inline-flex items-center rounded-md bg-yellow-600 px-3 py-2 text-white font-medium hover:bg-yellow-700"
+          >
+            Upgrade to Pro
+          </button>
             </section>
           )}
 

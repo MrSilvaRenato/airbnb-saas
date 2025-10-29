@@ -138,13 +138,21 @@ export default function Dashboard() {
   // -----------------
   // incoming props
   // -----------------
-  const {
-    properties,
-    totals,
-    filters,
-    userMeta,
-    limits,
-  } = usePage().props;
+ const {
+  properties,
+  totals,
+  filters,
+  userMeta,
+  limits,
+  recentlyUpgraded,
+} = usePage().props;
+
+const firstName = userMeta?.first_name || "Host";
+
+const isFreePlan = userMeta?.plan === "free";
+const blockedOnProperty = limits && !limits.canCreateProperty;
+const blockedOnStay = limits && !limits.canCreateStay;
+const showUpgradeBanner = isFreePlan && (blockedOnProperty || blockedOnStay);
 
   const items = properties.data;
 
@@ -190,21 +198,10 @@ export default function Dashboard() {
   };
 
   // 🔥 Stripe upgrade handler
-async function handleUpgradeClick() {
-  try {
-    // Navigate to the upgrade comparison page
-    router.visit(route("checkout.show"));
-  } catch (err) {
-    console.error("Navigation to checkout failed:", err);
-    // optional: toast("Unable to open upgrade page. Please try again.");
-  }
+function handleUpgradeClick() {
+  // just navigate to the comparison/upgrade page
+  router.visit(route('checkout.show')); // <-- whatever route name you used for CheckoutPageController@show
 }
-
-  // convenience booleans for UI
-  const isFreePlan = userMeta?.plan === "free";
-  const blockedOnProperty = limits && !limits.canCreateProperty;
-  const blockedOnStay = limits && !limits.canCreateStay;
-  const showUpgradeBanner = isFreePlan && (blockedOnProperty || blockedOnStay);
 
   return (
     <Shell
@@ -228,23 +225,40 @@ async function handleUpgradeClick() {
       }
     >
       {/* UPGRADE BANNER FOR FREE USERS AT LIMIT */}
-      {showUpgradeBanner && (
-        <div className="rounded-2xl border border-yellow-400 bg-yellow-50 p-4 mb-4 text-sm">
-          <div className="font-semibold text-yellow-800 mb-1">
-            You’ve hit the Free plan limit.
-          </div>
-          <div className="text-yellow-700 mb-3">
-            Upgrade to Pro to add unlimited properties and active stays, plus
-            unlock custom branding for your guest pages.
-          </div>
-          <button
-            onClick={handleUpgradeClick}
-            className="inline-flex items-center rounded-md bg-yellow-600 px-3 py-2 text-white font-medium hover:bg-yellow-700"
-          >
-            Upgrade to Pro
-          </button>
-        </div>
-      )}
+  {/* STATUS BANNER */}
+{recentlyUpgraded ? (
+  // ✅ success after Stripe
+  <div className="rounded-2xl border border-emerald-500 bg-emerald-50 p-4 mb-4 text-sm">
+    <div className="font-semibold text-emerald-800 mb-1">
+      Thanks, {firstName}! You’re on Pro ✅
+    </div>
+    <div className="text-emerald-700">
+      You can now create unlimited properties and stays, add your own
+      branding to guest pages, and see visit analytics for every stay.
+    </div>
+  </div>
+) : showUpgradeBanner ? (
+  // 🟡 normal upsell for Free plan
+  <div className="rounded-2xl border border-yellow-400 bg-yellow-50 p-4 mb-4 text-sm">
+    <div className="font-semibold text-yellow-800 mb-1">
+      You’ve hit the Free plan limit.
+    </div>
+    <div className="text-yellow-700 mb-3">
+      Upgrade to Pro to add unlimited properties and active stays, plus
+      unlock custom branding for your guest pages.
+    </div>
+
+    <button
+      onClick={() => {
+        router.visit(route("checkout.show"));
+      }}
+      className="inline-flex items-center rounded-md bg-yellow-600 px-3 py-2 text-white font-medium hover:bg-yellow-700"
+    >
+      Upgrade to Pro
+    </button>
+  </div>
+) : null}
+
 
       {/* Filters row */}
       <div className="rounded-2xl border bg-white p-3 mb-4">

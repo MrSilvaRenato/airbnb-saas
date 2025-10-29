@@ -1,22 +1,39 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Stripe\Stripe;
-use Stripe\Checkout\Session as CheckoutSession;
+use Stripe\Customer;
+use Stripe\Checkout\Session;
 
 class BillingController extends Controller
 {
+    /**
+     * POST /billing/checkout
+     * Route name: billing.checkout
+     *
+     * Creates (or reuses) a Stripe customer for this user,
+     * creates a Checkout Session for the Pro subscription,
+     * and then redirects them to Stripe Checkout.
+     */
     public function upgrade(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
 
-        // 1. Ensure we have/make a Stripe customer
+        // must be logged in
+        if (!$user) {
+            abort(403);
+        }
+
+        // load Stripe key
         Stripe::setApiKey(config('stripe.secret'));
 
+        // ensure we have a Stripe customer for this user
         if (!$user->stripe_customer_id) {
-            $customer = \Stripe\Customer::create([
+            $customer = Customer::create([
                 'email' => $user->email,
                 'name'  => $user->name ?? 'Host',
             ]);
@@ -25,32 +42,52 @@ class BillingController extends Controller
             $user->save();
         }
 
-        // 2. Create checkout session for a recurring subscription to PRO
-        $session = CheckoutSession::create([
+        // Build Checkout Session for subscription
+        // This assumes you are selling a recurring plan with Stripe Billing
+        $session = Session::create([
             'mode' => 'subscription',
             'customer' => $user->stripe_customer_id,
             'line_items' => [[
-                'price'    => config('stripe.price_pro'),
+                'price'    => config('stripe.price_id'), // e.g. price_abc123 from Stripe dashboard
                 'quantity' => 1,
             ]],
-            'success_url' => config('stripe.success_url'),
-            'cancel_url'  => config('stripe.cancel_url'),
+                'success_url' => route('host.dashboard', ['upgraded' => 1]),
+                'cancel_url'  => route('checkout.show'),
         ]);
 
-        // 3. Return the session id to React so frontend can redirect to Stripe
-        return response()->json([
-            'checkout_url' => $session->url,
-        ]);
+        // Redirect straight to Stripe Checkout hosted page
+        return redirect($session->url);
     }
 
-    public function success()
-    {
-        // We'll just render a “Success, you're Pro now” Inertia page.
-        return inertia('Billing/Success');
-    }
+    /**
+     * GET /billing/success
+     * Route name: billing.success
+     *
+     * User returns here after successful Stripe Checkout.
+     * We do NOT trust this page alone to "flip them to pro".
+     * The source of truth is the webhook.
+     */
+public function success(Request $request)
+{
+    $user = $request->user();
 
-    public function cancel()
-    {
-        return inertia('Billing/Cancel');
-    }
+    return Inertia::render('Billing/Success', [
+        'plan' => $user->plan ?? 'free',
+        'message' => $user->plan === 'pro'
+            ? "You're on Pro. Branding and unlimited stays are unlocked."
+            : "Payment complete. We're finalizing your upgrade…",
+    ]);
 }
+
+    /**
+     * GET /billing/cancel
+     * Route name: billing.cancel
+     *
+     * User backed out of Stripe Checkout.
+     */
+public function cancel(Request $request)
+{
+    return Inertia::render('Billing/Cancel', [
+        'message' => "You didn't upgrade. You're still on Free.",
+    ]);
+}}

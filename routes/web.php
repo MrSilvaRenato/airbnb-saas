@@ -167,7 +167,8 @@ Route::middleware(['auth', EnsureHost::class])->group(function () {
         ->name('billing.cancel');
 });
 
-
+// STRIPE WEBHOOK (public)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 /*
 |--------------------------------------------------------------------------
 | Public guest link
@@ -184,9 +185,6 @@ Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
 | - no auth, Stripe calls this
 |--------------------------------------------------------------------------
 */
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])
-    ->name('stripe.webhook');
-
 
 // Breeze / auth scaffolding
 require __DIR__ . '/auth.php';

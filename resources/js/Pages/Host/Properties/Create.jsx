@@ -1,7 +1,8 @@
 import React from 'react'
-import { Head, useForm, Link, usePage } from '@inertiajs/react'
+import { Head, useForm, Link, usePage, router } from '@inertiajs/react'
 
 export default function Create() {
+  
   // pull both errors and userMeta (plan info) from the page props
   const { errors = {}, userMeta = {} } = usePage().props || {}
 
@@ -44,7 +45,10 @@ export default function Create() {
 
   const hasAnyErrors = Object.keys(errors || {}).length > 0
   const isPro = userMeta.plan === 'pro'
-
+function handleUpgradeClick() {
+  // just navigate to the comparison/upgrade page
+  router.visit(route('checkout.show')); // <-- whatever route name you used for CheckoutPageController@show
+}
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <Head title="Add Property" />
@@ -462,13 +466,21 @@ export default function Create() {
             </label>
           </section>
         ) : (
+          
           <section className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-xs text-gray-800">
             <div className="font-semibold text-gray-900 text-sm mb-1">
               Branding (Pro)
             </div>
-            Add your logo and concierge-style header to the guest welcome link.
-            Upgrade to Pro to enable.
+            <div className="text-yellow-700 mb-3">Add your logo and concierge-style header to the guest welcome link.
+            Upgrade to Pro to enable.</div>
+                <button
+            onClick={handleUpgradeClick}
+            className="inline-flex items-center rounded-md bg-yellow-600 px-3 py-2 text-white font-medium hover:bg-yellow-700"
+          >
+            Upgrade to Pro
+          </button>
           </section>
+          
         )}
 
         {/* Actions */}
