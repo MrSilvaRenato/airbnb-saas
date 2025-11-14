@@ -12,6 +12,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use App\Models\Activity;
 
 class WelcomePackageController extends Controller
 
@@ -22,6 +23,7 @@ class WelcomePackageController extends Controller
 
 public function edit(Request $request, WelcomePackage $package)
 {
+        $this->authorize('update', $welcomePackage);
     // 1. auth check (host must own this property or be admin host)
     abort_if(
         $package->property->user_id !== $request->user()->id
@@ -369,6 +371,7 @@ public function edit(Request $request, WelcomePackage $package)
             // flash feedback
             'flash'                => [
                 'success' => session('success'),
+                
                 'error'   => session('error'),
             ],
 
@@ -383,125 +386,142 @@ public function edit(Request $request, WelcomePackage $package)
     // Manual create (form submit)
     // =========================
     public function store(Request $r, Property $property)
-    {
-        $this->authorizeProperty($property);
+{
+    $this->authorizeProperty($property);
 
-        // stricter validation: required core fields
-        $validated = $r->validate([
-            'check_in_date'        => 'required|date',
-            'check_out_date'       => 'required|date|after_or_equal:check_in_date',
+    $validated = $r->validate([
+        'check_in_date'        => 'required|date',
+        'check_out_date'       => 'required|date|after_or_equal:check_in_date',
 
-            'guest_first_name'     => 'required|string|max:80',
-            'guest_email'          => 'required|email:rfc,dns|max:255',
-            'guest_phone'          => 'nullable|string|max:40',
-            'guest_count'          => 'required|integer|max:50',
+        'guest_first_name'     => 'required|string|max:80',
+        'guest_email'          => 'required|email:rfc,dns|max:255',
+        'guest_phone'          => 'nullable|string|max:40',
+        'guest_count'          => 'required|integer|max:50',
 
-            'price_total'          => 'nullable|numeric|min:0|max:999999.99',
+        'price_total'          => 'nullable|numeric|min:0|max:999999.99',
 
-            'host_phone'           => 'nullable|string|max:40',
-            'smart_lock_code'      => 'nullable|string|max:100',
+        'host_phone'           => 'nullable|string|max:40',
+        'smart_lock_code'      => 'nullable|string|max:100',
 
-            // optional descriptive fields for bootstrapSectionsFor
-            'arrival_tips'         => 'nullable|string',
-            'parking_info'         => 'nullable|string',
-            'emergency_info'       => 'nullable|string',
-            'rules_summary'        => 'nullable|string',
-            'garbage_recycling'    => 'nullable|string',
-            'appliances_notes'     => 'nullable|string',
-            'safety_notes'         => 'nullable|string',
-            'checkout_list'        => 'nullable|string',
-        ]);
+        // optional content
+        'arrival_tips'         => 'nullable|string',
+        'parking_info'         => 'nullable|string',
+        'emergency_info'       => 'nullable|string',
+        'rules_summary'        => 'nullable|string',
+        'garbage_recycling'    => 'nullable|string',
+        'appliances_notes'     => 'nullable|string',
+        'safety_notes'         => 'nullable|string',
+        'checkout_list'        => 'nullable|string',
+    ]);
 
-        // normalise whitespace -> if "", store as null
-        foreach ([
-            'guest_first_name','guest_email','guest_phone','host_phone','smart_lock_code',
-            'arrival_tips','parking_info','emergency_info','rules_summary','garbage_recycling',
-            'appliances_notes','safety_notes','checkout_list',
-        ] as $field) {
-            if (isset($validated[$field])) {
-                $validated[$field] = trim($validated[$field]) === '' ? null : trim($validated[$field]);
-            }
+    // normalize blanks → null
+    foreach ([
+        'guest_first_name','guest_email','guest_phone','host_phone','smart_lock_code',
+        'arrival_tips','parking_info','emergency_info','rules_summary','garbage_recycling',
+        'appliances_notes','safety_notes','checkout_list',
+    ] as $field) {
+        if (array_key_exists($field, $validated)) {
+            $validated[$field] = trim((string) $validated[$field]) === '' ? null : trim((string) $validated[$field]);
         }
-
-        $checkIn  = $validated['check_in_date'];
-        $checkOut = $validated['check_out_date'];
-        $email    = $validated['guest_email'];
-
-        // overlap rule (strict < / > allows same-day turnover)
-        $overlapExists = WelcomePackage::where('property_id', $property->id)
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->where('check_in_date', '<', $checkOut)
-                  ->where('check_out_date', '>', $checkIn);
-            })
-            ->exists();
-
-        if ($overlapExists) {
-            throw ValidationException::withMessages([
-                'check_in_date' => 'These dates overlap an existing stay for this property.',
-            ]);
-        }
-
-        // same guest email in same date range for same property
-        $emailConflict = WelcomePackage::where('property_id', $property->id)
-            ->where('guest_email', $email)
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->where('check_in_date', '<', $checkOut)
-                  ->where('check_out_date', '>', $checkIn);
-            })
-            ->exists();
-
-        if ($emailConflict) {
-            throw ValidationException::withMessages([
-                'guest_email' => 'This guest email is already used for a stay in these dates for this property.',
-            ]);
-        }
-
-        // slug for public share link
-        $slug = Str::slug($property->title) . '-' . Str::lower(Str::random(6));
-
-        // create the stay
-        $package = WelcomePackage::create([
-            'property_id'        => $property->id,
-            'slug'               => $slug,
-            'is_published'       => true,
-
-            'check_in_date'      => $validated['check_in_date'],
-            'check_out_date'     => $validated['check_out_date'],
-            'guest_first_name'   => $validated['guest_first_name'],
-            'guest_email'        => $validated['guest_email'],
-            'guest_phone'        => $validated['guest_phone']        ?? null,
-            'guest_count'        => $validated['guest_count'],
-            'price_total'        => $validated['price_total']        ?? null,
-
-            'host_phone'         => $validated['host_phone']         ?? null,
-            'smart_lock_code'    => $validated['smart_lock_code']    ?? null,
-
-            'arrival_tips'       => $validated['arrival_tips']       ?? null,
-            'parking_info'       => $validated['parking_info']       ?? null,
-            'emergency_info'     => $validated['emergency_info']     ?? null,
-            'rules_summary'      => $validated['rules_summary']      ?? null,
-            'garbage_recycling'  => $validated['garbage_recycling']  ?? null,
-            'appliances_notes'   => $validated['appliances_notes']   ?? null,
-            'safety_notes'       => $validated['safety_notes']       ?? null,
-            'checkout_list'      => $validated['checkout_list']      ?? null,
-        ]);
-
-        // generate default guest sections
-        $this->bootstrapSectionsFor($package, $property, $validated);
-
-        // generate QR
-        $publicUrl = route('public.package', $package->slug);
-        $svg       = QrCode::format('svg')->size(600)->margin(2)->generate($publicUrl);
-
-        $qrPath = "qrcodes/{$package->slug}.svg";
-        Storage::disk('public')->put($qrPath, $svg);
-
-        $package->update(['qr_code_path' => $qrPath]);
-
-        return redirect()
-            ->route('host.dashboard')
-            ->with('success', 'Welcome package created.');
     }
+
+    $checkIn  = $validated['check_in_date'];
+    $checkOut = $validated['check_out_date'];
+    $email    = $validated['guest_email'];
+
+    // overlap rule (strict < / > allows same-day turnover)
+    $overlapExists = WelcomePackage::where('property_id', $property->id)
+        ->where(function ($q) use ($checkIn, $checkOut) {
+            $q->where('check_in_date', '<', $checkOut)
+              ->where('check_out_date', '>', $checkIn);
+        })->exists();
+
+    if ($overlapExists) {
+        throw ValidationException::withMessages([
+            'check_in_date' => 'These dates overlap an existing stay for this property.',
+        ]);
+    }
+
+    // same guest email in same date range for same property
+    $emailConflict = WelcomePackage::where('property_id', $property->id)
+        ->where('guest_email', $email)
+        ->where(function ($q) use ($checkIn, $checkOut) {
+            $q->where('check_in_date', '<', $checkOut)
+              ->where('check_out_date', '>', $checkIn);
+        })->exists();
+
+    if ($emailConflict) {
+        throw ValidationException::withMessages([
+            'guest_email' => 'This guest email is already used for a stay in these dates for this property.',
+        ]);
+    }
+
+    // slug for public share link
+    $slug = Str::slug($property->title) . '-' . Str::lower(Str::random(6));
+
+    // create the stay
+    $package = WelcomePackage::create([
+        'property_id'        => $property->id,
+        'slug'               => $slug,
+        'is_published'       => true,
+
+        'check_in_date'      => $validated['check_in_date'],
+        'check_out_date'     => $validated['check_out_date'],
+        'guest_first_name'   => $validated['guest_first_name'],
+        'guest_email'        => $validated['guest_email'],
+        'guest_phone'        => $validated['guest_phone']        ?? null,
+        'guest_count'        => $validated['guest_count'],
+        'price_total'        => $validated['price_total']        ?? null,
+
+        'host_phone'         => $validated['host_phone']         ?? null,
+        'smart_lock_code'    => $validated['smart_lock_code']    ?? null,
+
+        'arrival_tips'       => $validated['arrival_tips']       ?? null,
+        'parking_info'       => $validated['parking_info']       ?? null,
+        'emergency_info'     => $validated['emergency_info']     ?? null,
+        'rules_summary'      => $validated['rules_summary']      ?? null,
+        'garbage_recycling'  => $validated['garbage_recycling']  ?? null,
+        'appliances_notes'   => $validated['appliances_notes']   ?? null,
+        'safety_notes'       => $validated['safety_notes']       ?? null,
+        'checkout_list'      => $validated['checkout_list']      ?? null,
+    ]);
+
+
+
+    
+    // generate default guest sections
+    $this->bootstrapSectionsFor($package, $property, $validated);
+
+    // activity log (optional, non-blocking)
+   try {
+        Activity::record(
+            $r->user(),
+            $package,                 // subject
+            'created',                 // action (lowercase)
+            'Package Created',        // title
+            [
+            'guest'          => $package->guest_first_name,
+        ]
+        );
+    } catch (\Throwable $e) {
+        // swallow logging errors
+    }
+
+    
+    // generate QR
+    $publicUrl = route('public.package', $package->slug);
+    $svg       = \QrCode::format('svg')->size(600)->margin(2)->generate($publicUrl);
+
+    $qrPath = "qrcodes/{$package->slug}.svg";
+    Storage::disk('public')->put($qrPath, $svg);
+
+    $package->update(['qr_code_path' => $qrPath]);
+
+
+
+
+    return redirect()->route('host.dashboard')->with('success', 'Package created.');
+}
 
     // =========================
     // CSV import create
@@ -673,99 +693,113 @@ public function edit(Request $request, WelcomePackage $package)
     // Update an existing stay
     // =========================
     public function update(Request $r, WelcomePackage $package)
-    {
-        abort_if(
-            $package->property->user_id !== $r->user()->id
-            && !$r->user()->isHost(),
-            403
-        );
+{
+        $this->authorize('update', $welcomePackage);
+    abort_if(
+        ($package->property->user_id !== $r->user()->id) && !$r->user()->isHost(),
+        403
+    );
 
-        $validated = $r->validate([
-            'check_in_date'        => 'required|date',
-            'check_out_date'       => 'required|date|after_or_equal:check_in_date',
+    $validated = $r->validate([
+        'check_in_date'   => 'required|date',
+        'check_out_date'  => 'required|date|after_or_equal:check_in_date',
 
-            'guest_first_name'     => 'required|string|max:80',
-            'guest_email'          => 'required|email:rfc,dns|max:255',
-            'guest_phone'          => 'nullable|string|max:40',
-            'guest_count'          => 'required|integer|max:50',
+        'guest_first_name'=> 'required|string|max:80',
+        'guest_email'     => 'required|email:rfc,dns|max:255',
+        'guest_phone'     => 'nullable|string|max:40',
+        'guest_count'     => 'required|integer|max:50',
 
-            'price_total'          => 'nullable|numeric|min:0|max:999999.99',
-            'host_phone'           => 'nullable|string|max:40',
-            'smart_lock_code'      => 'nullable|string|max:100',
+        'price_total'     => 'nullable|numeric|min:0|max:999999.99',
+        'host_phone'      => 'nullable|string|max:40',
+        'smart_lock_code' => 'nullable|string|max:100',
 
-            'arrival_tips'         => 'nullable|string',
-            'emergency_info'       => 'nullable|string',
-        ]);
+        'arrival_tips'    => 'nullable|string',
+        'emergency_info'  => 'nullable|string',
+    ]);
 
-        // trim + null-out blanks before saving
-        foreach ([
-            'guest_first_name','guest_email','guest_phone','host_phone','smart_lock_code',
-            'arrival_tips','emergency_info',
-        ] as $field) {
-            if (isset($validated[$field])) {
-                $validated[$field] = trim($validated[$field]) === '' ? null : trim($validated[$field]);
-            }
+    // normalize blanks → null
+    foreach (['guest_first_name','guest_email','guest_phone','host_phone','smart_lock_code','arrival_tips','emergency_info'] as $f) {
+        if (array_key_exists($f, $validated)) {
+            $validated[$f] = trim((string)$validated[$f]) === '' ? null : trim((string)$validated[$f]);
         }
-
-        $checkIn  = $validated['check_in_date'];
-        $checkOut = $validated['check_out_date'];
-        $email    = $validated['guest_email'];
-
-        // check other stays for overlap
-        $overlapExists = WelcomePackage::where('property_id', $package->property_id)
-            ->where('id', '!=', $package->id)
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->where('check_in_date', '<', $checkOut)
-                  ->where('check_out_date', '>', $checkIn);
-            })
-            ->exists();
-
-        if ($overlapExists) {
-            throw ValidationException::withMessages([
-                'check_in_date' => 'These dates overlap an existing stay for this property.',
-            ]);
-        }
-
-        // email reuse conflict in overlapping range
-        $emailConflict = WelcomePackage::where('property_id', $package->property_id)
-            ->where('id', '!=', $package->id)
-            ->where('guest_email', $email)
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->where('check_in_date', '<', $checkOut)
-                  ->where('check_out_date', '>', $checkIn);
-            })
-            ->exists();
-
-        if ($emailConflict) {
-            throw ValidationException::withMessages([
-                'guest_email' => 'This guest email is already used for a stay in these dates for this property.',
-            ]);
-        }
-
-        $package->update($validated);
-
-        return back()->with('success', 'Stay details updated.');
     }
 
+    $checkIn  = $validated['check_in_date'];
+    $checkOut = $validated['check_out_date'];
+    $email    = $validated['guest_email'];
+
+    // overlap with other stays
+    $overlapExists = WelcomePackage::where('property_id', $package->property_id)
+        ->where('id', '!=', $package->id)
+        ->where(function ($q) use ($checkIn, $checkOut) {
+            $q->where('check_in_date', '<', $checkOut)
+              ->where('check_out_date', '>', $checkIn);
+        })->exists();
+
+    if ($overlapExists) {
+        throw ValidationException::withMessages([
+            'check_in_date' => 'These dates overlap an existing stay for this property.',
+        ]);
+    }
+
+    // email reuse conflict in overlapping range
+    $emailConflict = WelcomePackage::where('property_id', $package->property_id)
+        ->where('id', '!=', $package->id)
+        ->where('guest_email', $email)
+        ->where(function ($q) use ($checkIn, $checkOut) {
+            $q->where('check_in_date', '<', $checkOut)
+              ->where('check_out_date', '>', $checkIn);
+        })->exists();
+
+    if ($emailConflict) {
+        throw ValidationException::withMessages([
+            'guest_email' => 'This guest email is already used for a stay in these dates for this property.',
+        ]);
+    }
+
+    // apply updates
+    $package->update($validated);
+
+    // log activity (optional, won’t break UX if logger not present)
+            Activity::record($r->user(), $package, 'updated', 'Package Updated', [
+                'guest' => $package->guest_first_name,
+            ]);
+            
+    return back()->with('success', 'Stay details updated.');
+}
     // =========================
     // Delete a stay
     // =========================
     public function destroy(Request $request, WelcomePackage $package)
-    {
-        abort_if(
-            $package->property->user_id !== $request->user()->id
-            && !$request->user()->isHost(),
-            403
-        );
+{
+        $this->authorize('delete', $welcomePackage);
+    abort_if(
+        ($package->property->user_id !== $request->user()->id) && !$request->user()->isHost(),
+        403
+    );
 
-        $guestName = $package->guest_first_name ?: 'Guest';
-        $dates     = trim(($package->check_in_date ?? '') . ' → ' . ($package->check_out_date ?? ''));
+    // build UI message pieces now (record them before delete)
+    $guestName = $package->guest_first_name ?: 'Guest';
+    $dates     = trim(($package->check_in_date ?? '') . ' → ' . ($package->check_out_date ?? ''));
 
-        $package->delete();
+    // metadata for activity feed
+    $meta = [
+        'property_title' => optional($package->property)->title,
+        'guest'         => $package->guest_first_name,
+        'slug'          => $package->slug,
+        'check_in'      => $package->check_in_date,
+        'check_out'     => $package->check_out_date,
+    ];
 
-        return back()->with(
-            'success',
-            "Stay for {$guestName} ({$dates}) deleted."
-        );
-    }
+    // delete ONCE
+    $package->delete();
+
+
+        // destroy()
+            Activity::record($request->user(), null, 'deleted', 'Package Deleted', [
+                'guest' => $package->guest_first_name,
+            ]);
+
+    return back()->with('success', "Stay for {$guestName} ({$dates}) deleted.");
+}
 }

@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
-import { Head, useForm } from '@inertiajs/react'
+import React, { useState, useEffect } from "react";
+import { Head, useForm } from "@inertiajs/react";
+
 
 function AuthModal({ mode, setMode, loginForm, registerForm, submitLogin, submitRegister }) {
   if (!mode) return null
@@ -182,15 +183,23 @@ function AuthModal({ mode, setMode, loginForm, registerForm, submitLogin, submit
   )
 }
 
-export default function Landing() {
-  const [mode, setMode] = useState(null) // 'login' | 'register' | null
 
+
+export default function Landing() {
+  
+  const [mode, setMode] = useState(null) // 'login' | 'register' | null
   // login form
   const loginForm = useForm({
     email: '',
     password: '',
     remember: false,
   })
+  
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("login") === "1") setMode("login");       // 👈 correct setter
+    if (p.get("register") === "1") setMode("register"); // 👈 correct setter
+  }, []);
 
   const submitLogin = (e) => {
     e.preventDefault()

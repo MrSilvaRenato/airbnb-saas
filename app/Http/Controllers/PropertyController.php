@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Property;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Activity;
 
 class PropertyController extends Controller
 {
@@ -88,15 +89,34 @@ class PropertyController extends Controller
             $dataToCreate['brand_logo_path']     = null;
         }
 
-        Property::create($dataToCreate);
+  $property = Property::create($dataToCreate);
+
+    // activity log (don’t let logging break flow)
+    try {
+        Activity::record(
+            $request->user(),
+            $property,                 // subject
+            'created',                 // action (lowercase)
+            'Property Created',        // title
+            ['property_title' => $property->title]
+        );
+    } catch (\Throwable $e) {
+        // swallow logging errors
+    }
 
         return redirect()
             ->route('host.dashboard')
             ->with('success', 'Property created.');
     }
 
+
+
+
+
+
     public function edit(Request $request, Property $property)
     {
+        $this->authorize('update', $property);
         abort_if(
             $request->user()->id !== $property->user_id && !$request->user()->isHost(),
             403
@@ -134,85 +154,107 @@ class PropertyController extends Controller
         ]);
     }
 
-    public function update(Request $request, Property $property)
-    {
-        abort_if(
-            $request->user()->id !== $property->user_id && !$request->user()->isHost(),
-            403
-        );
+  public function update(Request $request, Property $property)
+{
+        $this->authorize('update', $property);
+    abort_if(
+        $request->user()->id !== $property->user_id && !$request->user()->isHost(),
+        403
+    );
 
-        // we can safely use validate() again now that field names match DB columns
-        $validated = $request->validate([
-            'title'                     => 'required|string|max:255',
-            'address'                   => 'nullable|string|max:255',
-            'wifi_name'                 => 'nullable|string|max:255',
-            'wifi_password'             => 'nullable|string|max:255',
-            'notes'                     => 'nullable|string',
+    // Validate against your actual columns/inputs
+    $validated = $request->validate([
+        'title'                     => 'required|string|max:255',
+        'address'                   => 'nullable|string|max:255',
+        'wifi_name'                 => 'nullable|string|max:255',
+        'wifi_password'             => 'nullable|string|max:255',
+        'notes'                     => 'nullable|string',
 
-            // branding (pro)
-            'brand_display_name'        => 'nullable|string|max:255',
-            'brand_contact_label'       => 'nullable|string|max:255',
-            'brand_logo_file'           => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
+        // branding (pro)
+        'brand_display_name'        => 'nullable|string|max:255',
+        'brand_contact_label'       => 'nullable|string|max:255',
+        'brand_logo_file'           => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
 
-            // defaults for future packages
-            'default_host_phone'        => 'nullable|string|max:40',
-            'default_smart_lock_code'   => 'nullable|string|max:100',
+        // defaults for future packages
+        'default_host_phone'        => 'nullable|string|max:40',
+        'default_smart_lock_code'   => 'nullable|string|max:100',
 
-            'default_arrival_tips'      => 'nullable|string',
-            'default_parking_info'      => 'nullable|string',
-            'default_emergency_info'    => 'nullable|string',
-            'default_rules_summary'     => 'nullable|string',
-            'default_garbage_recycling' => 'nullable|string',
-            'default_appliances_notes'  => 'nullable|string',
-            'default_safety_notes'      => 'nullable|string',
-            'default_checkout_list'     => 'nullable|string',
-        ]);
+        'default_arrival_tips'      => 'nullable|string',
+        'default_parking_info'      => 'nullable|string',
+        'default_emergency_info'    => 'nullable|string',
+        'default_rules_summary'     => 'nullable|string',
+        'default_garbage_recycling' => 'nullable|string',
+        'default_appliances_notes'  => 'nullable|string',
+        'default_safety_notes'      => 'nullable|string',
+        'default_checkout_list'     => 'nullable|string',
+    ]);
 
-        $isPro = ($request->user()->plan ?? 'free') === 'pro';
+    $isPro = ($request->user()->plan ?? 'free') === 'pro';
 
-        // core info
-        $property->title                    = $validated['title'];
-        $property->address                  = $validated['address']                   ?? null;
-        $property->wifi_name                = $validated['wifi_name']                 ?? null;
-        $property->wifi_password            = $validated['wifi_password']             ?? null;
-        $property->notes                    = $validated['notes']                     ?? null;
+    // Core info
+    $property->title          = $validated['title'];
+    $property->address        = $validated['address']        ?? null;
+    $property->wifi_name      = $validated['wifi_name']      ?? null;
+    $property->wifi_password  = $validated['wifi_password']  ?? null;
+    $property->notes          = $validated['notes']          ?? null;
 
-        // new default_* info
-        $property->default_host_phone        = $validated['default_host_phone']        ?? null;
-        $property->default_smart_lock_code   = $validated['default_smart_lock_code']   ?? null;
-        $property->default_arrival_tips      = $validated['default_arrival_tips']      ?? null;
-        $property->default_parking_info      = $validated['default_parking_info']      ?? null;
-        $property->default_emergency_info    = $validated['default_emergency_info']    ?? null;
-        $property->default_rules_summary     = $validated['default_rules_summary']     ?? null;
-        $property->default_garbage_recycling = $validated['default_garbage_recycling'] ?? null;
-        $property->default_appliances_notes  = $validated['default_appliances_notes']  ?? null;
-        $property->default_safety_notes      = $validated['default_safety_notes']      ?? null;
-        $property->default_checkout_list     = $validated['default_checkout_list']     ?? null;
+    // Defaults for future packages
+    $property->default_host_phone        = $validated['default_host_phone']        ?? null;
+    $property->default_smart_lock_code   = $validated['default_smart_lock_code']   ?? null;
+    $property->default_arrival_tips      = $validated['default_arrival_tips']      ?? null;
+    $property->default_parking_info      = $validated['default_parking_info']      ?? null;
+    $property->default_emergency_info    = $validated['default_emergency_info']    ?? null;
+    $property->default_rules_summary     = $validated['default_rules_summary']     ?? null;
+    $property->default_garbage_recycling = $validated['default_garbage_recycling'] ?? null;
+    $property->default_appliances_notes  = $validated['default_appliances_notes']  ?? null;
+    $property->default_safety_notes      = $validated['default_safety_notes']      ?? null;
+    $property->default_checkout_list     = $validated['default_checkout_list']     ?? null;
 
-        // branding: only allow if Pro
-        if ($isPro) {
-            $property->brand_display_name  = $validated['brand_display_name']  ?? null;
-            $property->brand_contact_label = $validated['brand_contact_label'] ?? null;
+    // Branding (Pro only)
+    if ($isPro) {
+        $property->brand_display_name  = $validated['brand_display_name']  ?? null;
+        $property->brand_contact_label = $validated['brand_contact_label'] ?? null;
 
-            if ($request->hasFile('brand_logo_file')) {
-                $path = $request->file('brand_logo_file')->store('brand', 'public');
-                $property->brand_logo_path = '/storage/' . $path;
-            }
-        } else {
-            $property->brand_display_name  = null;
-            $property->brand_contact_label = null;
-            $property->brand_logo_path     = null;
+        if ($request->hasFile('brand_logo_file')) {
+            $path = $request->file('brand_logo_file')->store('brand', 'public'); // storage/app/public/brand/...
+            $property->brand_logo_path = '/storage/' . $path; // web path
         }
-
-        $property->save();
-
-        return redirect()
-            ->route('host.dashboard')
-            ->with('success', 'Property updated.');
+    } else {
+        // Ensure free plans can't keep branding
+        $property->brand_display_name  = null;
+        $property->brand_contact_label = null;
+        $property->brand_logo_path     = null;
     }
+    $title = $property->title;
+    // Persist changes
+    $property->save();
+
+    // ---- FIX: remove the stray, undefined $data update block ----
+    // $property->update($data);   // <-- this was causing "Undefined variable $data"
+    // ----------------------------------------------------------------
+
+    // Activity log (safe-guarded)
+    try {
+        Activity::record(
+            $request->user(),
+            $property,                 // subject
+            'updated',                 // action (lowercase)
+            'Property Updated',        // title
+            ['property_title' => $property->title]
+        );
+    } catch (\Throwable $e) {
+        // swallow logging errors
+    }
+
+   return redirect()
+            ->route('host.dashboard')
+            ->with('success', 'Property Updated.');
+}
+
 
     public function destroy(Request $request, Property $property)
     {
+        $this->authorize('delete', $property);
         abort_if(
             $request->user()->id !== $property->user_id && !$request->user()->isHost(),
             403
@@ -220,6 +262,10 @@ class PropertyController extends Controller
 
         $title = $property->title;
         $property->delete();
+        // destroy()
+            Activity::record($request->user(), null, 'deleted', 'Property Deleted', [
+                'property_title' => $title,
+            ]);
 
         return back()->with('success', "Property “{$title}” deleted.");
     }

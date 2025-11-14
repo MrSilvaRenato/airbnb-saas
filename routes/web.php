@@ -15,15 +15,20 @@ use App\Http\Controllers\StripeWebhookController;
 
 // Middleware
 use App\Http\Middleware\EnsureHost;
+use App\Http\Controllers\ActivityController;
+
+
+
+
+
 
 /*
 |--------------------------------------------------------------------------
 | Public marketing / landing
 |--------------------------------------------------------------------------
 */
-Route::get('/', function () {
-    return Inertia::render('Landing');
-})->name('landing');
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -34,7 +39,7 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     $u = auth()->user();
     if (! $u) {
-        return redirect()->route('login');
+        return redirect()->route('Landing');
     }
 
     if (in_array($u->role, ['host', 'admin'])) {
@@ -58,7 +63,10 @@ Route::get('/dashboard', function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', EnsureHost::class])->group(function () {
-
+Route::middleware(['auth'])->group(function () {
+    Route::post('/activities/clear', [ActivityController::class, 'clear'])
+        ->name('activities.clear');
+});
     /*
     |-------------------------
     | Host dashboard
@@ -179,6 +187,7 @@ Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
     ->name('public.package');
 
 
+    
 /*
 |--------------------------------------------------------------------------
 | Stripe Webhook
@@ -186,5 +195,33 @@ Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
 |--------------------------------------------------------------------------
 */
 
+
+// Redirect fall back
+
 // Breeze / auth scaffolding
 require __DIR__ . '/auth.php';
+
+
+// Landing
+Route::get('/', function () {
+    return Inertia::render('Landing');
+})->name('landing');
+
+// Friendly redirects that open the Landing modals
+Route::get('/login', function () {
+    return redirect()->route('landing', ['login' => 1]);   // 👈 send ?login=1 to Landing
+})->name('login');
+
+Route::get('/register', function () {
+    return redirect()->route('landing', ['register' => 1]); // 👈 send ?register=1
+})->name('register');
+
+// ... keep the rest of your routes here ...
+
+// 404 fallback LAST
+Route::fallback(function () {
+    return Inertia::render('Errors/404', [
+        'status'  => 404,
+        'message' => 'This page could not be found.',
+    ])->toResponse(request())->setStatusCode(404);
+});

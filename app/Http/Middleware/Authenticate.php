@@ -2,14 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Http\Request;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
+use Illuminate\Http\Request;
 
 class Authenticate extends Middleware
 {
     protected function redirectTo(Request $request): ?string
     {
-        // Send guests to the Welcome page instead of /login
-        return $request->expectsJson() ? null : route('welcome');
+        // Send unauthenticated users to login (or 'landing' if you prefer)
+        return $request->expectsJson() ? null : route('landing'); // or route('landing')
     }
 }

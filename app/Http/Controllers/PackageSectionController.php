@@ -11,6 +11,7 @@ class PackageSectionController extends Controller
 {
 public function edit(Request $request, WelcomePackage $package)
 {
+        $this->authorize('update', $section);
     // eager load relationships so we have property + all sections
     $package->load([
         'property' => function ($q) {
@@ -178,6 +179,7 @@ public function edit(Request $request, WelcomePackage $package)
 
     public function update(Request $r, WelcomeSection $section)
     {
+        $this->authorize('update', $section);
         $this->authorizeHost($section->package);
 
         $data = $r->validate([
@@ -193,6 +195,7 @@ public function edit(Request $request, WelcomePackage $package)
 
     public function destroy(WelcomeSection $section)
     {
+        $this->authorize('delete', $section);
         $this->authorizeHost($section->package);
 
         $section->delete();
@@ -202,6 +205,7 @@ public function edit(Request $request, WelcomePackage $package)
 
     public function reorder(Request $r, WelcomePackage $package)
     {
+        $this->authorize('reorder', $section);
         $this->authorizeHost($package);
 
         $data = $r->validate([
