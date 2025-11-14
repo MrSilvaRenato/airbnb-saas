@@ -23,7 +23,7 @@ class WelcomePackageController extends Controller
 
 public function edit(Request $request, WelcomePackage $package)
 {
-        $this->authorize('update', $welcomePackage);
+        $this->authorize('update', $package);
     // 1. auth check (host must own this property or be admin host)
     abort_if(
         $package->property->user_id !== $request->user()->id
@@ -694,7 +694,7 @@ public function edit(Request $request, WelcomePackage $package)
     // =========================
     public function update(Request $r, WelcomePackage $package)
 {
-        $this->authorize('update', $welcomePackage);
+        $this->authorize('update', $package);
     abort_if(
         ($package->property->user_id !== $r->user()->id) && !$r->user()->isHost(),
         403
@@ -772,7 +772,7 @@ public function edit(Request $request, WelcomePackage $package)
     // =========================
     public function destroy(Request $request, WelcomePackage $package)
 {
-        $this->authorize('delete', $welcomePackage);
+        $this->authorize('delete', $package);
     abort_if(
         ($package->property->user_id !== $request->user()->id) && !$request->user()->isHost(),
         403
