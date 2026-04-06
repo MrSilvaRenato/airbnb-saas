@@ -16,11 +16,10 @@
 /public/build
 /public/hot
 /public/storage
-/database/database.sqlite
+database/database.sqlite
 /storage/*.key
 /storage/pail
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
-database/database.sqlite
