@@ -237,7 +237,7 @@ export default function Landing() {
       <section className="flex flex-col md:flex-row items-center justify-between px-8 py-16 md:py-24 max-w-6xl mx-auto">
         <div className="max-w-lg">
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
-            Everything your guest needs — in one link !
+            Everything your guest needs — in one link !!
           </h1>
 
           <p className="text-lg text-gray-600 mb-6">
