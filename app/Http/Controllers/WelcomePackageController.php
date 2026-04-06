@@ -692,35 +692,44 @@ public function edit(Request $request, WelcomePackage $package)
     // =========================
     // Update an existing stay
     // =========================
-    public function update(Request $r, WelcomePackage $package)
+// =========================
+// Update an existing stay
+// =========================
+public function update(Request $r, WelcomePackage $package)
 {
-        $this->authorize('update', $package);
+    $this->authorize('update', $package);
+
     abort_if(
         ($package->property->user_id !== $r->user()->id) && !$r->user()->isHost(),
         403
     );
 
     $validated = $r->validate([
-        'check_in_date'   => 'required|date',
-        'check_out_date'  => 'required|date|after_or_equal:check_in_date',
+        'check_in_date'    => 'required|date',
+        'check_out_date'   => 'required|date|after_or_equal:check_in_date',
 
-        'guest_first_name'=> 'required|string|max:80',
-        'guest_email'     => 'required|email:rfc,dns|max:255',
-        'guest_phone'     => 'nullable|string|max:40',
-        'guest_count'     => 'required|integer|max:50',
+        'guest_first_name' => 'required|string|max:80',
+        'guest_email'      => 'required|email:rfc,dns|max:255',
+        'guest_phone'      => 'nullable|string|max:40',
+        'guest_count'      => 'required|integer|max:50',
 
-        'price_total'     => 'nullable|numeric|min:0|max:999999.99',
-        'host_phone'      => 'nullable|string|max:40',
-        'smart_lock_code' => 'nullable|string|max:100',
+        'price_total'      => 'nullable|numeric|min:0|max:999999.99',
+        'host_phone'       => 'nullable|string|max:40',
+        'smart_lock_code'  => 'nullable|string|max:100',
 
-        'arrival_tips'    => 'nullable|string',
-        'emergency_info'  => 'nullable|string',
+        'arrival_tips'     => 'nullable|string',
+        'emergency_info'   => 'nullable|string',
     ]);
 
     // normalize blanks → null
-    foreach (['guest_first_name','guest_email','guest_phone','host_phone','smart_lock_code','arrival_tips','emergency_info'] as $f) {
+    foreach ([
+        'guest_first_name','guest_email','guest_phone',
+        'host_phone','smart_lock_code','arrival_tips','emergency_info'
+    ] as $f) {
         if (array_key_exists($f, $validated)) {
-            $validated[$f] = trim((string)$validated[$f]) === '' ? null : trim((string)$validated[$f]);
+            $validated[$f] = trim((string) $validated[$f]) === ''
+                ? null
+                : trim((string) $validated[$f]);
         }
     }
 
@@ -759,14 +768,60 @@ public function edit(Request $request, WelcomePackage $package)
 
     // apply updates
     $package->update($validated);
+    $package->refresh(); // make sure we have latest values
 
-    // log activity (optional, won’t break UX if logger not present)
-            Activity::record($r->user(), $package, 'updated', 'Package Updated', [
-                'guest' => $package->guest_first_name,
-            ]);
-            
+    // ─────────────────────────────
+    // NEW: refresh "Booking Summary" section text
+    // ─────────────────────────────
+    $guestLine = $package->guest_first_name
+        ? ($package->guest_first_name
+            . (
+                $package->guest_count
+                    ? " ({$package->guest_count} "
+                      . ($package->guest_count == 1 ? 'guest' : 'guests')
+                      . ")"
+                    : ""
+            )
+        )
+        : (
+            $package->guest_count
+                ? $package->guest_count . ' '
+                  . ($package->guest_count == 1 ? 'guest' : 'guests')
+                : 'Not set'
+        );
+
+    $totalLine = $package->price_total
+        ? "\nTotal: $" . number_format((float) $package->price_total, 2)
+        : '';
+
+    $bookingSection = $package->sections()
+        ->where('title', 'Booking Summary')
+        ->first();
+
+    if ($bookingSection) {
+        $bookingSection->update([
+            'body' =>
+                "Dates: " .
+                ($package->check_in_date  ?: '--') .
+                " → " .
+                ($package->check_out_date ?: '--') .
+                "\nGuests: " . $guestLine .
+                $totalLine,
+        ]);
+    }
+
+    // log activity (optional)
+    Activity::record(
+        $r->user(),
+        $package,
+        'updated',
+        'Package Updated',
+        ['guest' => $package->guest_first_name]
+    );
+
     return back()->with('success', 'Stay details updated.');
 }
+
     // =========================
     // Delete a stay
     // =========================

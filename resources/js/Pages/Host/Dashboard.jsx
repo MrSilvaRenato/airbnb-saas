@@ -146,45 +146,49 @@ export default function Dashboard() {
   };
 
   // --- NEW: compute next upcoming / ongoing stay (for header) ---
-  const nextInfo = React.useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+const nextInfo = React.useMemo(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    let pick = null; // {pkg, propertyTitle, start, isOngoing}
+  let pick = null; // {pkg, propertyTitle, start, end, isOngoing}
 
-    items.forEach((p) => {
-      (p.welcome_packages || []).forEach((pkg) => {
-        if (!pkg.check_in_date || !pkg.check_out_date) return;
+  items.forEach((p) => {
+    (p.welcome_packages || []).forEach((pkg) => {
+      if (!pkg.check_in_date || !pkg.check_out_date) return;
+      if (pkg.status === "cancelled") return;
 
-        const start = new Date(pkg.check_in_date + "T00:00:00");
-        const end = new Date(pkg.check_out_date + "T00:00:00");
+      const start = new Date(pkg.check_in_date + "T00:00:00");
+      const end = new Date(pkg.check_out_date + "T00:00:00");
 
-        const candidate = {
-          pkg,
-          propertyTitle: p.title,
-          start,
-          end,
-          isOngoing: today >= start && today <= end,
-        };
+      // 🔴 KEY FIX: ignore fully ended stays
+      if (end < today) return;
 
-        // Prefer ongoing; else earliest upcoming
-        if (!pick) {
-          pick = candidate;
-          return;
-        }
+      const candidate = {
+        pkg,
+        propertyTitle: p.title,
+        start,
+        end,
+        isOngoing: today >= start && today <= end,
+      };
 
-        if (candidate.isOngoing && !pick.isOngoing) {
-          pick = candidate;
-          return;
-        }
+      // Prefer ongoing; else earliest upcoming
+      if (!pick) {
+        pick = candidate;
+        return;
+      }
 
-        if (!candidate.isOngoing && !pick.isOngoing) {
-          if (candidate.start < pick.start) pick = candidate;
-        }
-      });
+      if (candidate.isOngoing && !pick.isOngoing) {
+        pick = candidate;
+        return;
+      }
+
+      if (!candidate.isOngoing && !pick.isOngoing) {
+        if (candidate.start < pick.start) pick = candidate;
+      }
     });
+  });
 
-    if (!pick) return null;
+  if (!pick) return null;
 
     const daysUntil =
       pick.isOngoing
@@ -1055,7 +1059,7 @@ const IconBroom = () => (
   <div className="shrink-0 flex gap-2">
     {a.openUrl && (
       <a
-        href={a.openUrl}
+        href={a.openUrl}  
         className="px-2 py-1 rounded border bg-white text-xs hover:bg-gray-100"
       >
         Open
