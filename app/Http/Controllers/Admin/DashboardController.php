@@ -46,6 +46,8 @@ class DashboardController extends Controller
         return back();
     }
 
+    
+
     public function destroy(User $user)
     {
         $user->delete();

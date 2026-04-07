@@ -37,9 +37,12 @@ export default function AdminDashboard() {
         return list;
     }, [users, q, planFilter, sort]);
 
-    const togglePlan = (user) => {
-        router.post(route("admin.users.plan", user.id), {}, { preserveScroll: true });
-    };
+  const togglePlan = (user) => {
+    router.post(route("admin.users.plan", user.id), {}, {
+        preserveScroll: true,
+        preserveState: false,
+    });
+};
 
     const deleteUser = (user) => {
         router.delete(route("admin.users.destroy", user.id), {
