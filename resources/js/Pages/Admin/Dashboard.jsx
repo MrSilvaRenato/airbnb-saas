@@ -37,10 +37,11 @@ export default function AdminDashboard() {
         return list;
     }, [users, q, planFilter, sort]);
 
-  const togglePlan = (user) => {
+ const togglePlan = (user) => {
     router.post(route("admin.users.plan", user.id), {}, {
         preserveScroll: true,
-        preserveState: false,
+        preserveState: true,
+        only: ['users', 'totals'],
     });
 };
 
