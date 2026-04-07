@@ -27,10 +27,8 @@ createInertiaApp({
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.getRegistrations().then((regs) => {
-      // avoid duplicate registrations while dev server hot-reloads
-      const hasOurSW = regs.some(r => r.active && r.active.scriptURL.includes('/sw.js'));
-      if (!hasOurSW) navigator.serviceWorker.register('/sw.js');
-    }).catch(() => navigator.serviceWorker.register('/sw.js'));
+      regs.forEach(r => r.unregister());
+    });
   });
 }
 
