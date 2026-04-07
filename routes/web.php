@@ -32,6 +32,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::post('/users/{user}/plan', [DashboardController::class, 'updatePlan'])->name('admin.users.plan');
     Route::delete('/users/{user}', [DashboardController::class, 'destroy'])->name('admin.users.destroy');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::post('/users/{user}/plan', [DashboardController::class, 'updatePlan'])->name('admin.users.plan');
+    Route::delete('/users/{user}', [DashboardController::class, 'destroy'])->name('admin.users.destroy');
+    Route::post('/users/{user}/impersonate', [DashboardController::class, 'impersonate'])->name('admin.users.impersonate');
+    Route::post('/stop-impersonating', [DashboardController::class, 'stopImpersonating'])->name('admin.stop.impersonating');
 });
 
 /*

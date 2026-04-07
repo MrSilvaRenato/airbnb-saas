@@ -27,7 +27,7 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
- public function share(Request $request): array
+public function share(Request $request): array
 {
     return array_merge(parent::share($request), [
         'auth' => [
@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
             'success' => fn() => $request->session()->get('success'),
             'error'   => fn() => $request->session()->get('error'),
         ],
+        'impersonating' => session()->has('impersonating_as'),
     ]);
 }
 }

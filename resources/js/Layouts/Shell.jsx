@@ -14,8 +14,19 @@ function NavLink({ href, children }) {
 export default function Shell({ title, children, right = null }) {
   const { auth } = usePage().props
   const user = auth?.user
-
-  return (
+  const { impersonating } = usePage().props;
+{impersonating && (
+    <div className="bg-yellow-400 text-yellow-900 text-sm font-medium px-4 py-2 flex items-center justify-between">
+        <span>⚠️ You are viewing as another user</span>
+        <button
+            onClick={() => router.post(route('admin.stop.impersonating'))}
+            className="px-3 py-1 rounded bg-yellow-900 text-yellow-100 text-xs font-medium hover:bg-yellow-800"
+        >
+            Stop & return to Admin
+        </button>
+    </div>
+)}
+  return (  
     <div className="min-h-screen bg-gray-50">
       {/* Top Nav */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">

@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers\Admin;
-
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Inertia\Inertia;
@@ -46,7 +46,20 @@ class DashboardController extends Controller
         return back();
     }
 
-    
+    public function impersonate(User $user)
+{
+    session(['impersonating_as' => $user->id, 'original_admin_id' => auth()->id()]);
+    Auth::login($user);
+    return redirect()->route('host.dashboard');
+}
+
+public function stopImpersonating()
+{
+    $adminId = session('original_admin_id');
+    session()->forget(['impersonating_as', 'original_admin_id']);
+    Auth::loginUsingId($adminId);
+    return redirect()->route('admin.dashboard');
+}
 
     public function destroy(User $user)
     {

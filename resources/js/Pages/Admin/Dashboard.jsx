@@ -52,6 +52,12 @@ export default function AdminDashboard() {
         });
     };
 
+    const impersonate = (user) => {
+    router.post(route("admin.users.impersonate", user.id), {}, {
+        preserveScroll: false,
+    });
+};
+
     return (
         <Shell title="Admin Dashboard">
             {/* Header */}
@@ -138,6 +144,14 @@ export default function AdminDashboard() {
                                 <td className="px-4 py-3 text-xs text-gray-500">{timeAgo(u.updated_at)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex gap-2">
+
+                                        <button
+                                            onClick={() => impersonate(u)}
+                                            className="text-xs px-2 py-1 rounded border text-blue-600 border-blue-200 hover:bg-blue-50 transition-colors"
+                                        >
+                                            Login as
+                                        </button>
+
                                         <button
                                             onClick={() => togglePlan(u)}
                                             className={`text-xs px-2 py-1 rounded border transition-colors ${
