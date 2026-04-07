@@ -12,7 +12,7 @@ use App\Http\Controllers\PublicPackageController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutPageController;
 use App\Http\Controllers\StripeWebhookController;
-
+use App\Http\Controllers\Admin\DashboardController;
 // Middleware
 use App\Http\Middleware\EnsureHost;
 use App\Http\Controllers\ActivityController;
@@ -28,7 +28,11 @@ use App\Http\Controllers\ActivityController;
 |--------------------------------------------------------------------------
 */
 
-
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::post('/users/{user}/plan', [DashboardController::class, 'updatePlan'])->name('admin.users.plan');
+    Route::delete('/users/{user}', [DashboardController::class, 'destroy'])->name('admin.users.destroy');
+});
 
 /*
 |--------------------------------------------------------------------------

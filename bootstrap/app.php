@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminOnly::class,
             'auth'   => \App\Http\Middleware\Authenticate::class,
             'host'   => \App\Http\Middleware\EnsureHost::class,
             'tenant' => \App\Http\Middleware\EnsureTenant::class,
