@@ -10,11 +10,15 @@ export default function Create() {
     importEmailConflict = false,
     flash = {},
     errors = {},
+    auth,
   } = usePage().props;
+
+  const isPro = auth?.user?.plan === 'pro';
 
   const { data, setData, post, processing } = useForm({
     check_in_date: "",
     check_out_date: "",
+    auto_send: false,
     guest_first_name: "",
     guest_email: "",
     guest_phone: "",
@@ -371,6 +375,21 @@ export default function Create() {
             )}
           </div>
         </div> */}
+
+        {isPro && (
+          <div className="flex items-center gap-3 py-2 border-t border-gray-100">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.auto_send}
+                onChange={(e) => setData('auto_send', e.target.checked)}
+                className="w-4 h-4 rounded"
+              />
+              <span className="text-sm font-medium">Auto-send welcome email on check-in day</span>
+            </label>
+            <span className="text-xs text-gray-400">Pro — guest receives their link automatically at 8am</span>
+          </div>
+        )}
 
         <div className="flex gap-3 pt-2">
           <button
