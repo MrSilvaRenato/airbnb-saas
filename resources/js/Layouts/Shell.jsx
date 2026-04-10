@@ -52,8 +52,25 @@ export default function Shell({ title, children, right = null }) {
               {user && (
                 <>
                   <NavLink href="/host/dashboard">Dashboard</NavLink>
+                  <NavLink href="/host/calendar">
+                    <span className="flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
+                      </svg>
+                      Calendar
+                    </span>
+                  </NavLink>
                   <NavLink href="/host/analytics">Analytics</NavLink>
                   {user.plan === 'pro' && <NavLink href="/host/maintenance">Maintenance</NavLink>}
+                  <NavLink href="/billing/manage">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                        <line x1="1" y1="10" x2="23" y2="10" />
+                      </svg>
+                      Billing
+                    </span>
+                  </NavLink>
                 </>
               )}
             </div>
@@ -96,8 +113,21 @@ export default function Shell({ title, children, right = null }) {
           <Link href="/host/dashboard" className="px-3 py-1.5 rounded-lg text-sm bg-gray-100">
             Dashboard
           </Link>
+          <Link href="/host/calendar" className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+              <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
+            </svg>
+            Calendar
+          </Link>
           <Link href="/host/analytics" className="px-3 py-1.5 rounded-lg text-sm">
             Analytics
+          </Link>
+          <Link href="/billing/manage" className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+            Billing
           </Link>
         </div>
       )}

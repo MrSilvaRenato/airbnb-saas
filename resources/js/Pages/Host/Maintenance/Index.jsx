@@ -1,6 +1,7 @@
 import React from "react";
 import { Head, usePage, router } from "@inertiajs/react";
 import Shell from "@/Layouts/Shell";
+import EmptyState from "@/Components/EmptyState";
 
 const PRIORITY_COLORS = {
     urgent: "bg-red-100 text-red-700 border-red-200",
@@ -203,6 +204,14 @@ export default function MaintenanceIndex() {
             </div>
 
             {/* Kanban board */}
+            {tasks.length === 0 ? (
+                <EmptyState
+                    icon="maintenance"
+                    heading="No maintenance tasks"
+                    body="Track repairs and issues for your properties. Create your first task to get started."
+                    cta={{ label: 'Create a task', href: '#' }}
+                />
+            ) : (
             <div className="grid md:grid-cols-3 gap-4">
                 {STATUS_COLUMNS.map(col => (
                     <div key={col.key} className={`rounded-2xl border-t-4 bg-gray-50 ${col.color} p-4 flex flex-col gap-3`}>
@@ -220,13 +229,12 @@ export default function MaintenanceIndex() {
                             />
                         ))}
                         {tasksByStatus(col.key).length === 0 && (
-                            <div className="text-xs text-gray-400 text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
-                                No {col.label.toLowerCase()} tasks
-                            </div>
+                            <div className="text-center text-sm text-gray-300 py-8">No tasks</div>
                         )}
                     </div>
                 ))}
             </div>
+            )}
 
             {/* Task Modal */}
             {modal && (

@@ -526,6 +526,10 @@ public function edit(Request $request, WelcomePackage $package)
 
 
 
+    if (($r->user()->onboarding_step ?? 0) < 2) {
+        $r->user()->update(['onboarding_step' => 2]);
+    }
+
     return redirect()->route('host.dashboard')->with('success', 'Package created.');
 }
 

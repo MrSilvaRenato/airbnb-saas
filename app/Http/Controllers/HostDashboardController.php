@@ -126,6 +126,10 @@ if ($a->action !== 'deleted') {
         ],
         'recentlyUpgraded' => $request->boolean('upgraded', false),
         'activities'       => $activities,   // 👈 now present
+        'onboarding' => [
+            'step'    => $user->onboarding_step ?? 0,
+            'skipped' => (bool) $user->onboarding_skipped_at,
+        ],
     ]);
 }
 
