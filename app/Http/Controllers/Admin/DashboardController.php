@@ -26,6 +26,7 @@ class DashboardController extends Controller
     ]);
 
         $pro  = $users->where('plan', 'pro')->count();
+        $host = $users->where('plan', 'host')->count();
         $free = $users->where('plan', 'free')->count();
 
         return Inertia::render('Admin/Dashboard', [
@@ -33,15 +34,21 @@ class DashboardController extends Controller
             'totals' => [
                 'total' => $users->count(),
                 'pro'   => $pro,
+                'host'  => $host,
                 'free'  => $free,
-                'mrr'   => $pro * 29,
+                'mrr'   => ($host * 19) + ($pro * 49),
             ],
         ]);
     }
 
     public function updatePlan(User $user)
     {
-        $newPlan = $user->plan === 'pro' ? 'free' : 'pro';
+        $newPlan = match($user->plan) {
+            'free'  => 'host',
+            'host'  => 'pro',
+            'pro'   => 'free',
+            default => 'host',
+        };
         $user->update(['plan' => $newPlan]);
         return back();
     }

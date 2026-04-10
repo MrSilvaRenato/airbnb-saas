@@ -69,16 +69,17 @@ export default function AdminDashboard() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 {[
                     { label: "Total users", value: totals.total },
-                    { label: "Pro subscribers", value: totals.pro, green: true },
-                    { label: "Free plan", value: totals.free },
+                    { label: "Starter (free)", value: totals.free },
+                    { label: "Host ($19/mo)", value: totals.host ?? 0, blue: true },
+                    { label: "Pro ($49/mo)", value: totals.pro, green: true },
                     { label: "MRR (est.)", value: `$${totals.mrr.toLocaleString()}`, green: true },
                 ].map((k) => (
                     <div key={k.label} className="rounded-xl border bg-white p-4">
                         <div className="text-xs text-gray-500 mb-1">{k.label}</div>
-                        <div className={`text-2xl font-semibold ${k.green ? "text-emerald-600" : ""}`}>{k.value}</div>
+                        <div className={`text-2xl font-semibold ${k.green ? "text-emerald-600" : k.blue ? "text-indigo-600" : ""}`}>{k.value}</div>
                     </div>
                 ))}
             </div>
@@ -95,7 +96,8 @@ export default function AdminDashboard() {
                     <select className="border rounded-lg px-3 py-2 text-sm bg-white" value={planFilter} onChange={e => setPlanFilter(e.target.value)}>
                         <option value="">All plans</option>
                         <option value="pro">Pro</option>
-                        <option value="free">Free</option>
+                        <option value="host">Host</option>
+                        <option value="free">Starter (free)</option>
                     </select>
                     <select className="border rounded-lg px-3 py-2 text-sm bg-white" value={sort} onChange={e => setSort(e.target.value)}>
                         <option value="newest">Newest first</option>
@@ -118,11 +120,11 @@ export default function AdminDashboard() {
                                 <div className="text-xs text-gray-500 truncate">{u.email}</div>
                             </div>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium flex-shrink-0 ${
-                                u.plan === "pro"
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-gray-50 text-gray-600 border-gray-200"
+                                u.plan === "pro" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : u.plan === "host" ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                : "bg-gray-50 text-gray-600 border-gray-200"
                             }`}>
-                                {u.plan === "pro" ? "PRO" : "FREE"}
+                                {u.plan === "pro" ? "PRO" : u.plan === "host" ? "HOST" : "FREE"}
                             </span>
                         </div>
                         <div className="grid grid-cols-3 text-xs text-gray-500 mb-3 gap-1">
@@ -140,12 +142,12 @@ export default function AdminDashboard() {
                             <button
                                 onClick={() => togglePlan(u)}
                                 className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
-                                    u.plan === "free"
-                                        ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                                        : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                                    u.plan === "free" ? "text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                                    : u.plan === "host" ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                    : "text-gray-600 border-gray-200 hover:bg-gray-50"
                                 }`}
                             >
-                                {u.plan === "free" ? "→ Pro" : "→ Free"}
+                                {u.plan === "free" ? "→ Host" : u.plan === "host" ? "→ Pro" : "→ Free"}
                             </button>
                             <button
                                 onClick={() => setConfirmDelete(u)}
@@ -185,11 +187,11 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                                        u.plan === "pro"
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                        u.plan === "pro" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : u.plan === "host" ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                        : "bg-gray-50 text-gray-600 border-gray-200"
                                     }`}>
-                                        {u.plan === "pro" ? "PRO" : "FREE"}
+                                        {u.plan === "pro" ? "PRO" : u.plan === "host" ? "HOST" : "FREE"}
                                     </span>
                                 </td>
                                 <td className="px-4 py-3 text-center">{u.properties_count}</td>
@@ -207,12 +209,12 @@ export default function AdminDashboard() {
                                         <button
                                             onClick={() => togglePlan(u)}
                                             className={`text-xs px-2 py-1 rounded border transition-colors ${
-                                                u.plan === "free"
-                                                    ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                                                    : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                                                u.plan === "free" ? "text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                                                : u.plan === "host" ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                                : "text-gray-600 border-gray-200 hover:bg-gray-50"
                                             }`}
                                         >
-                                            {u.plan === "free" ? "→ Pro" : "→ Free"}
+                                            {u.plan === "free" ? "→ Host" : u.plan === "host" ? "→ Pro" : "→ Free"}
                                         </button>
                                         <button
                                             onClick={() => setConfirmDelete(u)}

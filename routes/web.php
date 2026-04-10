@@ -12,6 +12,8 @@ use App\Http\Controllers\PublicPackageController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutPageController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\Admin\DashboardController;
 // Middleware
 use App\Http\Middleware\EnsureHost;
@@ -88,6 +90,18 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::get('/host/dashboard', [HostDashboardController::class, 'index'])
         ->name('host.dashboard');
+
+    Route::get('/host/analytics', [AnalyticsController::class, 'index'])
+        ->name('host.analytics');
+
+    Route::get('/host/maintenance', [MaintenanceController::class, 'index'])
+        ->name('maintenance.index');
+    Route::post('/host/maintenance', [MaintenanceController::class, 'store'])
+        ->name('maintenance.store');
+    Route::put('/host/maintenance/{task}', [MaintenanceController::class, 'update'])
+        ->name('maintenance.update');
+    Route::delete('/host/maintenance/{task}', [MaintenanceController::class, 'destroy'])
+        ->name('maintenance.destroy');
 
     /*
     |-------------------------

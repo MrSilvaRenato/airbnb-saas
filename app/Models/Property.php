@@ -55,6 +55,11 @@ class Property extends Model
         return $this->hasMany(WelcomePackage::class);
     }
 
+    public function maintenanceTasks(): HasMany
+    {
+        return $this->hasMany(MaintenanceTask::class);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Convenience helpers for dashboard logic

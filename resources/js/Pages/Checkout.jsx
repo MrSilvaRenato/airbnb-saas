@@ -1,223 +1,171 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
 
-export default function Checkout({ userPlan, limits, checkoutRoute }) {
-  const isPro = userPlan === "pro";
+function Check({ color = "indigo" }) {
+    return (
+        <svg className={`w-4 h-4 text-${color}-500 flex-shrink-0`} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+        </svg>
+    );
+}
 
-  return (
-    <>
-      <Head title="Upgrade to Pro" />
+function Cross() {
+    return (
+        <svg className="w-4 h-4 text-gray-300 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+        </svg>
+    );
+}
 
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center px-4 py-12">
-        <div className="w-full max-w-4xl">
-          {/* Header / pitch */}
-          <div className="text-center mb-10">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Upgrade to Pro
-            </h1>
+const PLANS = [
+    {
+        key: "free",
+        name: "Starter",
+        price: 0,
+        pitch: "Get started with your first property at no cost.",
+        color: "gray",
+        features: [
+            { label: "1 property", included: true },
+            { label: "1 active stay", included: true },
+            { label: "Guest welcome page (/p/<slug>)", included: true },
+            { label: "QR code per stay", included: true },
+            { label: "Wi-Fi, lock code, house rules", included: true },
+            { label: "Custom branding", included: false },
+            { label: "Analytics dashboard", included: false },
+            { label: "Maintenance tracking", included: false },
+            { label: "Guest auto-email on check-in", included: false },
+        ],
+    },
+    {
+        key: "host",
+        name: "Host",
+        price: 19,
+        pitch: "For serious hosts who want branding and unlimited stays.",
+        badge: "Most popular",
+        color: "indigo",
+        features: [
+            { label: "Up to 5 properties", included: true },
+            { label: "Unlimited active stays", included: true },
+            { label: "Guest welcome page (/p/<slug>)", included: true },
+            { label: "QR code per stay", included: true },
+            { label: "Wi-Fi, lock code, house rules", included: true },
+            { label: "Custom branding (logo + header)", included: true },
+            { label: "Analytics dashboard — basic", included: true },
+            { label: "Maintenance tracking", included: false },
+            { label: "Guest auto-email on check-in", included: false },
+        ],
+    },
+    {
+        key: "pro",
+        name: "Pro",
+        price: 49,
+        pitch: "For property managers and agencies running multiple sites.",
+        color: "emerald",
+        features: [
+            { label: "Unlimited properties", included: true },
+            { label: "Unlimited active stays", included: true },
+            { label: "Guest welcome page (/p/<slug>)", included: true },
+            { label: "QR code per stay", included: true },
+            { label: "Wi-Fi, lock code, house rules", included: true },
+            { label: "Custom branding (logo + header)", included: true },
+            { label: "Analytics dashboard — full", included: true },
+            { label: "Maintenance tracking", included: true },
+            { label: "Guest auto-email on check-in", included: true },
+        ],
+    },
+];
 
-            <p className="mt-2 text-gray-600 text-sm">
-              Unlock unlimited properties and active stays, add your own
-              branding to guest pages, and look like a professional
-              short-stay operator — not just “someone on Airbnb.”
-            </p>
+const ringColor = { indigo: "ring-indigo-500 border-indigo-400", emerald: "ring-emerald-500 border-emerald-400", gray: "border-gray-200" };
+const badgeColor = { indigo: "bg-indigo-600", emerald: "bg-emerald-600" };
+const btnColor = {
+    indigo: "bg-indigo-600 hover:bg-indigo-700 text-white",
+    emerald: "bg-emerald-600 hover:bg-emerald-700 text-white",
+};
 
-            {isPro && (
-              <div className="mt-4 inline-block rounded-full bg-green-100 text-green-700 text-xs font-medium px-3 py-1">
-                You’re already on Pro 🎉
-              </div>
-            )}
-          </div>
+export default function Checkout({ userPlan, checkoutRoute }) {
+    const csrf = typeof document !== "undefined"
+        ? document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
+        : "";
 
-          {/* Pricing cards */}
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Free plan card */}
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm flex flex-col">
-              <div className="p-6 border-b border-gray-100">
-                <div className="text-[11px] font-semibold uppercase text-gray-500 tracking-wide">
-                  Free Plan
+    return (
+        <>
+            <Head title="HostFlows — Choose Your Plan" />
+
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4 py-14">
+                <div className="w-full max-w-5xl">
+                    <div className="text-center mb-10">
+                        <h1 className="text-3xl font-bold text-gray-900">Simple, transparent pricing</h1>
+                        <p className="mt-2 text-gray-500 text-sm max-w-lg mx-auto">
+                            Start free, upgrade when you're ready. Cancel any time — your plan updates instantly after checkout.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-3">
+                        {PLANS.map((plan) => {
+                            const isCurrent = userPlan === plan.key;
+                            const isUpgrade = plan.key !== "free" && !isCurrent;
+                            const ring = ringColor[plan.color];
+
+                            return (
+                                <div
+                                    key={plan.key}
+                                    className={`relative rounded-2xl bg-white border flex flex-col shadow-sm ${ring} ${plan.badge ? "ring-2" : ""}`}
+                                >
+                                    {plan.badge && (
+                                        <div className={`absolute -top-3 right-4 rounded-full ${badgeColor[plan.color]} text-white text-[10px] font-semibold px-3 py-1 shadow`}>
+                                            {plan.badge}
+                                        </div>
+                                    )}
+
+                                    <div className="p-6 border-b border-gray-100">
+                                        <div className={`text-[11px] font-semibold uppercase tracking-wide text-${plan.color === "gray" ? "gray-400" : plan.color + "-600"}`}>
+                                            {plan.name}
+                                        </div>
+                                        <div className="mt-2 text-3xl font-bold text-gray-900">
+                                            ${plan.price}
+                                            <span className="text-base font-medium text-gray-400"> /mo</span>
+                                        </div>
+                                        <p className="mt-2 text-sm text-gray-500">{plan.pitch}</p>
+                                    </div>
+
+                                    <ul className="p-6 flex-1 space-y-2.5">
+                                        {plan.features.map((f) => (
+                                            <li key={f.label} className="flex items-start gap-2 text-sm text-gray-700">
+                                                {f.included ? <Check color={plan.color === "gray" ? "gray" : plan.color} /> : <Cross />}
+                                                <span className={f.included ? "" : "text-gray-400"}>{f.label}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <div className="p-6 border-t border-gray-100">
+                                        {isCurrent ? (
+                                            <button disabled className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-400">
+                                                Current plan
+                                            </button>
+                                        ) : plan.key === "free" ? (
+                                            <button disabled className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-400">
+                                                Free forever
+                                            </button>
+                                        ) : (
+                                            <form method="POST" action={checkoutRoute}>
+                                                <input type="hidden" name="_token" value={csrf} />
+                                                <input type="hidden" name="plan" value={plan.key} />
+                                                <button type="submit" className={`w-full rounded-lg py-2.5 text-sm font-semibold shadow transition-colors ${btnColor[plan.color]}`}>
+                                                    Upgrade to {plan.name}
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <p className="mt-10 text-center text-xs text-gray-400">
+                        Guests open your link on their phone at the door — your logo, check-in steps, Wi-Fi, and house rules all in one place. No more "can you resend the code?" texts at 11pm.
+                    </p>
                 </div>
-
-                <div className="mt-2 text-3xl font-bold text-gray-900">
-                  $0
-                  <span className="text-base font-medium text-gray-500">
-                    {" "}
-                    /month
-                  </span>
-                </div>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  Perfect to get started with your first property.
-                </p>
-              </div>
-
-              <ul className="p-6 flex-1 space-y-3 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>Up to {limits.free.max_properties} property</span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>
-                    Personalised guest welcome page{" "}
-                    <span className="text-gray-500 text-[11px]">
-                      (/p/&lt;slug&gt;)
-                    </span>{" "}
-                    for each stay
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>QR code for each stay (print it for check-in)</span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>
-                    Guest access to Wi-Fi, smart lock code, house rules
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span>
-                    Visit tracking (total views &amp; last 7 days)
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-400">•</span>
-                  <span className="line-through decoration-red-500">
-                    Custom brand / concierge header
-                  </span>
-                </li>
-              </ul>
-
-              <div className="p-6 border-t border-gray-100">
-                <button
-                  disabled
-                  className="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-white py-2.5 text-sm font-medium text-gray-400"
-                >
-                  Current
-                </button>
-              </div>
             </div>
-
-            {/* Pro plan card */}
-            <div className="rounded-2xl border border-indigo-500 bg-white shadow-lg ring-1 ring-indigo-500/20 flex flex-col relative">
-              <div className="absolute -top-3 right-4">
-                <div className="rounded-full bg-indigo-600 text-white text-[10px] font-semibold px-2 py-1 shadow-md">
-                  Most popular
-                </div>
-              </div>
-
-              <div className="p-6 border-b border-gray-100">
-                <div className="text-[11px] font-semibold uppercase text-indigo-600 tracking-wide">
-                  Pro Plan
-                </div>
-
-                <div className="mt-2 text-3xl font-bold text-gray-900">
-                  ${limits.pro.price}
-                  <span className="text-base font-medium text-gray-500">
-                    {" "}
-                    /month
-                  </span>
-                </div>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  For serious hosts who want concierge-grade presentation
-                  and unlimited active stays.
-                </p>
-              </div>
-
-              <ul className="p-6 flex-1 space-y-3 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-indigo-500">•</span>
-                  <span>
-                    {limits.pro.max_properties} properties / stays
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-indigo-500">•</span>
-                  <span>
-                    Full branding: your logo + your “text us anytime”
-                    concierge header in the guest’s hero section
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-indigo-500">•</span>
-                  <span>
-                    WhatsApp share links + tap-to-call host button
-                  </span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-indigo-500">•</span>
-                  <span>Live visit analytics per stay</span>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="text-indigo-500">•</span>
-                  <span>
-                    You look like a boutique property manager, not
-                    “some listing”
-                  </span>
-                </li>
-              </ul>
-
-              <div className="p-6 border-t border-gray-100">
-                {isPro ? (
-                  <button
-                    disabled
-                    className="w-full cursor-not-allowed rounded-lg bg-green-600 py-2.5 text-sm font-semibold text-white shadow hover:bg-green-700 disabled:opacity-60"
-                  >
-                    You’re on Pro ✔
-                  </button>
-                ) : (
-                  // 🔥 THIS IS THE KEY CHANGE
-                  <form method="POST" action={checkoutRoute}>
-                    {/* CSRF token required for Laravel POST */}
-                    <input
-                      type="hidden"
-                      name="_token"
-                      value={
-                        document
-                          .querySelector('meta[name="csrf-token"]')
-                          .getAttribute("content")
-                      }
-                    />
-
-                    <button
-                      type="submit"
-                      className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700"
-                    >
-                      Upgrade to Pro
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Reassurance / proof */}
-          <div className="mt-10 text-center text-xs text-gray-500 leading-relaxed max-w-xl mx-auto">
-            <p>
-              Guests open your link on their phone at the door. They see
-              your logo, check-in steps, Wi-Fi, and house rules all in one
-              place — no more “can you resend the code?” texts at 11pm.
-            </p>
-
-            <p className="mt-4">
-              Cancel any time. Your plan updates automatically right after
-              checkout.
-            </p>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+        </>
+    );
 }

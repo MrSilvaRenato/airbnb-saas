@@ -121,6 +121,10 @@ public function edit(Request $request, WelcomePackage $package)
             'check_out_date'   => $package->check_out_date ?? '',
         ],
 
+        // auto-communication fields
+        'auto_send'  => (bool) $package->auto_send,
+        'sent_at'    => $package->sent_at?->toDateTimeString(),
+
         // and we still need sections for editing/reordering
         'sections' => $package->sections
             ->sortBy('sort_order')
@@ -412,6 +416,7 @@ public function edit(Request $request, WelcomePackage $package)
         'appliances_notes'     => 'nullable|string',
         'safety_notes'         => 'nullable|string',
         'checkout_list'        => 'nullable|string',
+        'auto_send'            => 'nullable|boolean',
     ]);
 
     // normalize blanks → null
@@ -484,6 +489,7 @@ public function edit(Request $request, WelcomePackage $package)
         'appliances_notes'   => $validated['appliances_notes']   ?? null,
         'safety_notes'       => $validated['safety_notes']       ?? null,
         'checkout_list'      => $validated['checkout_list']      ?? null,
+        'auto_send'          => (bool) ($validated['auto_send']  ?? false),
     ]);
 
 
@@ -719,6 +725,7 @@ public function update(Request $r, WelcomePackage $package)
 
         'arrival_tips'     => 'nullable|string',
         'emergency_info'   => 'nullable|string',
+        'auto_send'        => 'nullable|boolean',
     ]);
 
     // normalize blanks → null
@@ -767,6 +774,7 @@ public function update(Request $r, WelcomePackage $package)
     }
 
     // apply updates
+    $validated['auto_send'] = (bool) ($validated['auto_send'] ?? false);
     $package->update($validated);
     $package->refresh(); // make sure we have latest values
 

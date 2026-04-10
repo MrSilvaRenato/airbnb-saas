@@ -32,7 +32,7 @@ public function share(Request $request): array
     return array_merge(parent::share($request), [
         'auth' => [
             'user' => $request->user()
-                ? $request->user()->only('id','name','email','role')
+                ? $request->user()->only('id','name','email','role','plan')
                 : null,
         ],
         'flash' => [

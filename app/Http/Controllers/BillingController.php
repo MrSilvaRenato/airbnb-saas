@@ -23,39 +23,41 @@ class BillingController extends Controller
     {
         $user = $request->user();
 
-        // must be logged in
         if (!$user) {
             abort(403);
         }
 
-        // load Stripe key
+        $plan = $request->input('plan', 'host'); // 'host' or 'pro'
+        $priceId = $plan === 'pro'
+            ? config('stripe.price_pro')
+            : config('stripe.price_host');
+
+        if (!$priceId) {
+            abort(500, 'Stripe price not configured.');
+        }
+
         Stripe::setApiKey(config('stripe.secret'));
 
-        // ensure we have a Stripe customer for this user
         if (!$user->stripe_customer_id) {
             $customer = Customer::create([
                 'email' => $user->email,
                 'name'  => $user->name ?? 'Host',
             ]);
-
             $user->stripe_customer_id = $customer->id;
             $user->save();
         }
 
-        // Build Checkout Session for subscription
-        // This assumes you are selling a recurring plan with Stripe Billing
         $session = Session::create([
-            'mode' => 'subscription',
+            'mode'     => 'subscription',
             'customer' => $user->stripe_customer_id,
             'line_items' => [[
-                'price'    => config('stripe.price_id'), // e.g. price_abc123 from Stripe dashboard
+                'price'    => $priceId,
                 'quantity' => 1,
             ]],
-                'success_url' => route('host.dashboard', ['upgraded' => 1]),
-                'cancel_url'  => route('checkout.show'),
+            'success_url' => route('host.dashboard', ['upgraded' => 1]),
+            'cancel_url'  => route('checkout.show'),
         ]);
 
-        // Redirect straight to Stripe Checkout hosted page
         return redirect($session->url);
     }
 
@@ -74,8 +76,10 @@ public function success(Request $request)
     return Inertia::render('Billing/Success', [
         'plan' => $user->plan ?? 'free',
         'message' => $user->plan === 'pro'
-            ? "You're on Pro. Branding and unlimited stays are unlocked."
-            : "Payment complete. We're finalizing your upgrade…",
+            ? "You're on Pro. Unlimited properties, maintenance tracking, and guest auto-communication are unlocked."
+            : ($user->plan === 'host'
+                ? "You're on Host. Up to 5 properties and branding are unlocked."
+                : "Payment complete. We're finalizing your upgrade…"),
     ]);
 }
 

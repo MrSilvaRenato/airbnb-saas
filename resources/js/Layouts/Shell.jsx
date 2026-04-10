@@ -45,14 +45,15 @@ export default function Shell({ title, children, right = null }) {
           
           <div className="flex items-center gap-4">
             <Link href={route('host.dashboard')} className="font-semibold tracking-tight">
-              AirBnB SaaS
+              HostFlows
             </Link>
 
             <div className="hidden sm:flex items-center gap-1">
               {user && (
                 <>
-                  <NavLink href="/dashboard">Dashboard</NavLink>
-                  <NavLink href="/host/dashboard">Host</NavLink>
+                  <NavLink href="/host/dashboard">Dashboard</NavLink>
+                  <NavLink href="/host/analytics">Analytics</NavLink>
+                  {user.plan === 'pro' && <NavLink href="/host/maintenance">Maintenance</NavLink>}
                 </>
               )}
             </div>
@@ -93,10 +94,10 @@ export default function Shell({ title, children, right = null }) {
       {user && (
         <div className="sm:hidden fixed bottom-4 left-1/2 -translate-x-1/2 px-3 py-2 rounded-full shadow-lg bg-white border flex gap-2">
           <Link href="/host/dashboard" className="px-3 py-1.5 rounded-lg text-sm bg-gray-100">
-            Host
-          </Link>
-          <Link href="/dashboard" className="px-3 py-1.5 rounded-lg text-sm">
             Dashboard
+          </Link>
+          <Link href="/host/analytics" className="px-3 py-1.5 rounded-lg text-sm">
+            Analytics
           </Link>
         </div>
       )}
