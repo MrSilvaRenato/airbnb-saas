@@ -89,9 +89,55 @@ public function success(Request $request)
      *
      * User backed out of Stripe Checkout.
      */
-public function cancel(Request $request)
-{
-    return Inertia::render('Billing/Cancel', [
-        'message' => "You didn't upgrade. You're still on Free.",
-    ]);
-}}
+    public function cancel(Request $request)
+    {
+        return Inertia::render('Billing/Cancel', [
+            'message' => "You didn't upgrade. You're still on Free.",
+        ]);
+    }
+
+    /**
+     * POST /billing/portal
+     * Route name: billing.portal
+     *
+     * Creates a Stripe Customer Portal session and redirects the user.
+     * Requires Stripe Customer Portal to be enabled in the Stripe Dashboard.
+     */
+    public function portal(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->stripe_customer_id) {
+            return redirect()->route('checkout.show')
+                ->with('error', 'No active subscription found.');
+        }
+
+        \Stripe\Stripe::setApiKey(config('stripe.secret'));
+
+        $session = \Stripe\BillingPortal\Session::create([
+            'customer'   => $user->stripe_customer_id,
+            'return_url' => route('billing.manage'),
+        ]);
+
+        return redirect($session->url);
+    }
+
+    /**
+     * GET /billing/manage
+     * Route name: billing.manage
+     *
+     * Shows the billing management page with current plan info
+     * and a link to the Stripe Customer Portal.
+     */
+    public function manage(Request $request)
+    {
+        $user = $request->user();
+
+        return \Inertia\Inertia::render('Billing/Manage', [
+            'plan'              => $user->plan ?? 'free',
+            'hasStripeCustomer' => (bool) $user->stripe_customer_id,
+            'checkoutRoute'     => route('billing.checkout'),
+            'portalRoute'       => route('billing.portal'),
+        ]);
+    }
+}
