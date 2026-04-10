@@ -58,7 +58,7 @@ class BillingController extends Controller
             'cancel_url'  => route('checkout.show'),
         ]);
 
-        return redirect($session->url);
+        return response()->json(['url' => $session->url]);
     }
 
     /**
