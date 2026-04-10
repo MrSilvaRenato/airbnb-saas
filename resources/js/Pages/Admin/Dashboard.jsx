@@ -105,8 +105,62 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Users Table */}
-            <div className="rounded-2xl border bg-white overflow-hidden">
+            {/* Mobile card list */}
+            <div className="md:hidden flex flex-col gap-3">
+                {filtered.map(u => (
+                    <div key={u.id} className="rounded-2xl border bg-white p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                                {initials(u.name)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="font-medium truncate">{u.name}</div>
+                                <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium flex-shrink-0 ${
+                                u.plan === "pro"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    : "bg-gray-50 text-gray-600 border-gray-200"
+                            }`}>
+                                {u.plan === "pro" ? "PRO" : "FREE"}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-3 text-xs text-gray-500 mb-3 gap-1">
+                            <div><span className="font-medium text-gray-700">{u.properties_count}</span> properties</div>
+                            <div><span className="font-medium text-gray-700">{u.stays_count}</span> stays</div>
+                            <div>Joined {fmtDate(u.joined)}</div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => impersonate(u)}
+                                className="flex-1 text-xs py-2 rounded-lg border text-blue-600 border-blue-200 hover:bg-blue-50 transition-colors"
+                            >
+                                Login as
+                            </button>
+                            <button
+                                onClick={() => togglePlan(u)}
+                                className={`flex-1 text-xs py-2 rounded-lg border transition-colors ${
+                                    u.plan === "free"
+                                        ? "text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                        : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                                }`}
+                            >
+                                {u.plan === "free" ? "→ Pro" : "→ Free"}
+                            </button>
+                            <button
+                                onClick={() => setConfirmDelete(u)}
+                                className="flex-1 text-xs py-2 rounded-lg border text-red-600 border-red-200 hover:bg-red-50 transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                ))}
+                <div className="text-xs text-gray-400 text-center py-1">{filtered.length} user{filtered.length !== 1 ? "s" : ""} shown</div>
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block rounded-2xl border bg-white overflow-hidden">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b">
@@ -144,14 +198,12 @@ export default function AdminDashboard() {
                                 <td className="px-4 py-3 text-xs text-gray-500">{timeAgo(u.updated_at)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex gap-2">
-
                                         <button
                                             onClick={() => impersonate(u)}
                                             className="text-xs px-2 py-1 rounded border text-blue-600 border-blue-200 hover:bg-blue-50 transition-colors"
                                         >
                                             Login as
                                         </button>
-
                                         <button
                                             onClick={() => togglePlan(u)}
                                             className={`text-xs px-2 py-1 rounded border transition-colors ${
