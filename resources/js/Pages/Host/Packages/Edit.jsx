@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Head, useForm, usePage, router } from '@inertiajs/react'
 
 export default function Edit() {
-  const { pkg } = usePage().props
+  const { pkg, auth } = usePage().props
+  const isPro = auth?.user?.plan === 'pro'
 
   const [metaSaved, setMetaSaved] = useState(false)
   const [orderSaving, setOrderSaving] = useState(false)
@@ -29,6 +30,7 @@ export default function Edit() {
     arrival_tips:     pkg.arrival_tips     || '',
     emergency_info:   pkg.emergency_info   || '',
     price_total:      pkg.price_total      || '',
+    auto_send:        pkg.auto_send        || false,
   })
 
   const saveMeta = (e) => {
@@ -363,6 +365,25 @@ export default function Edit() {
             <div className="text-xs text-red-600">{metaErrors.price_total}</div>
           )}
         </div>
+
+        {isPro && (
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={meta.auto_send}
+                onChange={(e) => setMeta('auto_send', e.target.checked)}
+                className="w-4 h-4 rounded"
+              />
+              <span className="text-sm font-medium">Auto-send welcome email on check-in day</span>
+            </label>
+            {pkg.sent_at ? (
+              <div className="text-xs text-emerald-600">Email sent on {pkg.sent_at}</div>
+            ) : (
+              <div className="text-xs text-gray-400">Not yet sent</div>
+            )}
+          </div>
+        )}
 
         <div className="pt-2 flex items-center gap-3">
           <button

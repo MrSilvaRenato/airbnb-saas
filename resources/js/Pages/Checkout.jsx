@@ -94,7 +94,6 @@ export default function Checkout({ userPlan, checkoutRoute }) {
             }
         } catch (err) {
             console.error("Checkout error", err);
-            // optional: show user-friendly UI error
         }
     };
 
