@@ -1,5 +1,6 @@
 import React from "react";
-import { Head, router } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
+import axios from "axios";
 
 function Check({ color = "indigo" }) {
     return (
@@ -83,8 +84,18 @@ const btnColor = {
 };
 
 export default function Checkout({ userPlan, checkoutRoute }) {
-    const handleUpgrade = (planKey) => {
-        router.post(checkoutRoute, { plan: planKey });
+    const handleUpgrade = async (planKey) => {
+        try {
+            const res = await axios.post(checkoutRoute, { plan: planKey });
+            if (res?.data?.url) {
+                window.location.href = res.data.url;
+            } else {
+                console.error("No checkout URL returned", res);
+            }
+        } catch (err) {
+            console.error("Checkout error", err);
+            // optional: show user-friendly UI error
+        }
     };
 
     return (
@@ -103,7 +114,6 @@ export default function Checkout({ userPlan, checkoutRoute }) {
                     <div className="grid gap-6 md:grid-cols-3">
                         {PLANS.map((plan) => {
                             const isCurrent = userPlan === plan.key;
-                            const isUpgrade = plan.key !== "free" && !isCurrent;
                             const ring = ringColor[plan.color];
 
                             return (
@@ -138,7 +148,7 @@ export default function Checkout({ userPlan, checkoutRoute }) {
                                     </ul>
 
                                     <div className="p-6 border-t border-gray-100">
-                                        {isCurrent ? (
+                                        {userPlan === plan.key ? (
                                             <button disabled className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-400">
                                                 Current plan
                                             </button>
