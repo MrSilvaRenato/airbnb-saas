@@ -1,5 +1,6 @@
 import React from "react";
 import { Head, router } from "@inertiajs/react";
+ import axios from 'axios';
 
 function Check({ color = "indigo" }) {
     return (
@@ -84,7 +85,12 @@ const btnColor = {
 
 export default function Checkout({ userPlan, checkoutRoute }) {
     const handleUpgrade = (planKey) => {
-        router.post(checkoutRoute, { plan: planKey });
+       
+
+const handleUpgrade = async (planKey) => {
+    const res = await axios.post(checkoutRoute, { plan: planKey });
+    window.location.href = res.data.url;
+};
     };
 
     return (

@@ -193,8 +193,8 @@ Route::middleware(['auth'])->group(function () {
     // This is the "start Stripe Checkout Session" action.
     // If in your app this method is named upgrade() instead of startCheckout(),
     // keep the function name you already use.
-    Route::post('/billing/checkout', [BillingController::class, 'upgrade'])
-        ->name('billing.checkout');
+    Route::get('/billing/checkout', [BillingController::class, 'upgrade'])
+    ->name('billing.checkout');
 
     Route::get('/billing/success', [BillingController::class, 'success'])
         ->name('billing.success');
