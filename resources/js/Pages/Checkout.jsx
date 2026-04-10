@@ -1,5 +1,5 @@
 import React from "react";
-import { Head } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 
 function Check({ color = "indigo" }) {
     return (
@@ -83,9 +83,9 @@ const btnColor = {
 };
 
 export default function Checkout({ userPlan, checkoutRoute }) {
-    const csrf = typeof document !== "undefined"
-        ? document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
-        : "";
+    const handleUpgrade = (planKey) => {
+        router.post(checkoutRoute, { plan: planKey });
+    };
 
     return (
         <>
@@ -147,13 +147,12 @@ export default function Checkout({ userPlan, checkoutRoute }) {
                                                 Free forever
                                             </button>
                                         ) : (
-                                            <form method="POST" action={checkoutRoute}>
-                                                <input type="hidden" name="_token" value={csrf} />
-                                                <input type="hidden" name="plan" value={plan.key} />
-                                                <button type="submit" className={`w-full rounded-lg py-2.5 text-sm font-semibold shadow transition-colors ${btnColor[plan.color]}`}>
-                                                    Upgrade to {plan.name}
-                                                </button>
-                                            </form>
+                                            <button
+                                                onClick={() => handleUpgrade(plan.key)}
+                                                className={`w-full rounded-lg py-2.5 text-sm font-semibold shadow transition-colors ${btnColor[plan.color]}`}
+                                            >
+                                                Upgrade to {plan.name}
+                                            </button>
                                         )}
                                     </div>
                                 </div>
