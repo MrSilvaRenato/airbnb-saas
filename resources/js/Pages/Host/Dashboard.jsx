@@ -4,6 +4,8 @@ import { Link, usePage, router } from "@inertiajs/react";
 import Shell from "@/Layouts/Shell";
 import StatCard from "@/Components/StatCard";
 import ShareStayModal from "@/Components/ShareStayModal";
+import OnboardingWizard from "@/Components/OnboardingWizard";
+import EmptyState from "@/Components/EmptyState";
 
 // date formatter
 const fmtDate = (d) =>
@@ -103,6 +105,7 @@ export default function Dashboard() {
     limits,
     recentlyUpgraded,
     activities = [],
+    onboarding = { step: 0, skipped: false },
   } = usePage().props;
 
   const firstName = userMeta?.first_name || "Host";
@@ -428,6 +431,9 @@ const IconBroom = () => (
         </button>
       }
     >
+      {/* onboarding wizard */}
+      <OnboardingWizard step={onboarding.step} skipped={onboarding.skipped} />
+
       {/* banners */}
       {recentlyUpgraded ? (
         <div className="rounded-2xl border border-emerald-500 bg-emerald-50 p-4 mb-4 text-sm">
@@ -658,6 +664,14 @@ const IconBroom = () => (
   {/* LEFT: Properties list (2/3 width) */}
   <div className="lg:col-span-2">
     {/* Properties grid */}
+    {items.length === 0 ? (
+      <EmptyState
+        icon="property"
+        heading="No properties yet"
+        body="Add your first property to start sending digital welcome packages to guests."
+        cta={{ label: 'Add your first property', href: route('properties.create') }}
+      />
+    ) : (
     <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
       {items.map((p) => (
         <div
@@ -863,9 +877,10 @@ const IconBroom = () => (
         </div>
       ))}
     </div>
+    )}
 
     {/* pagination */}
-    <Paginator links={properties.links} />
+    {items.length > 0 && <Paginator links={properties.links} />}
   </div>
 
   {/* RIGHT: Sticky sidebar (Action Center + Recent) */}

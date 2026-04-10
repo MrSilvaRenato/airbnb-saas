@@ -104,6 +104,10 @@ class PropertyController extends Controller
         // swallow logging errors
     }
 
+        if (($request->user()->onboarding_step ?? 0) < 1) {
+            $request->user()->update(['onboarding_step' => 1]);
+        }
+
         return redirect()
             ->route('host.dashboard')
             ->with('success', 'Property created.');

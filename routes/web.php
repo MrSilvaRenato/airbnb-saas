@@ -14,10 +14,13 @@ use App\Http\Controllers\CheckoutPageController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\ExportController;
 // Middleware
 use App\Http\Middleware\EnsureHost;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\OnboardingController;
 
 
 
@@ -91,8 +94,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/host/dashboard', [HostDashboardController::class, 'index'])
         ->name('host.dashboard');
 
+    Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])
+        ->name('onboarding.skip');
+
     Route::get('/host/analytics', [AnalyticsController::class, 'index'])
         ->name('host.analytics');
+
+    Route::get('/host/calendar', [CalendarController::class, 'index'])
+        ->name('host.calendar');
 
     Route::get('/host/maintenance', [MaintenanceController::class, 'index'])
         ->name('maintenance.index');
@@ -180,6 +189,14 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |-------------------------
+    | CSV Exports
+    |-------------------------
+    */
+    Route::get('/export/stays',     [ExportController::class, 'stays'])     ->name('export.stays');
+    Route::get('/export/analytics', [ExportController::class, 'analytics']) ->name('export.analytics');
+
+    /*
+    |-------------------------
     | Billing / Upgrade flow (host-facing)
     |-------------------------
     | /checkout       -> shows Free vs Pro comparison, Upgrade CTA
@@ -201,6 +218,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/billing/cancel', [BillingController::class, 'cancel'])
         ->name('billing.cancel');
+
+    Route::get('/billing/manage', [BillingController::class, 'manage'])
+        ->name('billing.manage');
+
+    Route::post('/billing/portal', [BillingController::class, 'portal'])
+        ->name('billing.portal');
 });
 
 // STRIPE WEBHOOK (public)

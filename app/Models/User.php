@@ -23,6 +23,9 @@ class User extends Authenticatable
         'password',
         'plan',
         'role',
+        'onboarding_step',
+        'onboarding_skipped_at',
+        'notify_on_guest_view',
     ];
 
     /**
@@ -43,13 +46,20 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at'      => 'datetime',
+            'password'               => 'hashed',
+            'onboarding_skipped_at'  => 'datetime',
+            'notify_on_guest_view'   => 'boolean',
         ];
     }
 
 public function properties() { return $this->hasMany(Property::class); }
 public function isHost(): bool { return $this->role === 'host' || $this->role === 'admin'; }
 public function isTenant(): bool { return $this->role === 'tenant'; }
+
+public function isOnboardingComplete(): bool
+{
+    return ($this->onboarding_step ?? 0) >= 3 || $this->onboarding_skipped_at !== null;
+}
 
 }

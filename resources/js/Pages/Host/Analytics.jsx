@@ -1,6 +1,7 @@
 import React from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import Shell from "@/Layouts/Shell";
+import EmptyState from "@/Components/EmptyState";
 
 function KpiCard({ label, value, sub }) {
     return (
@@ -99,13 +100,44 @@ export default function Analytics() {
                         {isPro ? "Full analytics — Pro plan" : "Basic analytics — Host plan"}
                     </div>
                 </div>
-                {!isPro && (
-                    <Link href={route("checkout.show")} className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-                        Upgrade to Pro for full analytics
-                    </Link>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                    <a
+                        href={route('export.stays')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export Stays
+                    </a>
+                    {isPro && (
+                        <a
+                            href={route('export.analytics')}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Export Analytics
+                        </a>
+                    )}
+                    {!isPro && (
+                        <Link href={route("checkout.show")} className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+                            Upgrade to Pro for full analytics
+                        </Link>
+                    )}
+                </div>
             </div>
 
+            {kpis.totalStays === 0 ? (
+                <EmptyState
+                    icon="analytics"
+                    heading="No data yet"
+                    body="Analytics will appear here once you create stays and guests start viewing their welcome pages."
+                    cta={{ label: 'Go to Dashboard', href: route('host.dashboard') }}
+                />
+            ) : (
+            <>
             {/* KPI row */}
             <div className={`grid grid-cols-2 ${isPro ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4 mb-6`}>
                 <KpiCard label="Total guest visits" value={kpis.totalVisits.toLocaleString()} />
@@ -178,6 +210,8 @@ export default function Analytics() {
                     </div>
                 )}
             </div>
+            </>
+            )}
         </Shell>
     );
 }
