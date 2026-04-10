@@ -15,24 +15,7 @@ class CheckoutPageController extends Controller
         $user = $request->user();
 
         return Inertia::render('Checkout', [
-            'userPlan' => $user->plan ?? 'free', // fallback for safety
-
-            'limits' => [
-                'free' => [
-                    'max_properties' => 1,
-                    'branding' => false,
-                    'analytics' => true,
-                    'price' => 0,
-                ],
-                'pro' => [
-                    'max_properties' => 'Unlimited',
-                    'branding' => true,
-                    'analytics' => true,
-                    'price' => 19, // your displayed monthly price (for now)
-                ],
-            ],
-
-            // existing Stripe checkout route that starts CheckoutSession
+            'userPlan'      => $user->plan ?? 'free',
             'checkoutRoute' => route('billing.checkout'),
         ]);
     }

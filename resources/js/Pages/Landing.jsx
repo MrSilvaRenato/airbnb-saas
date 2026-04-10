@@ -231,7 +231,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-900">
-      <Head title="Welcome Pack for Modern Hosts" />
+      <Head title="HostFlows — Digital Welcome Guides for Property Managers" />
 
       {/* Hero Section */}
       <section className="flex flex-col md:flex-row items-center justify-between px-8 py-16 md:py-24 max-w-6xl mx-auto">
@@ -403,7 +403,7 @@ export default function Landing() {
         </div>
 
         <p className="mt-4">
-          © {new Date().getFullYear()} WelcomePack. All rights reserved.
+          © {new Date().getFullYear()} HostFlows. All rights reserved.
         </p>
       </footer>
 

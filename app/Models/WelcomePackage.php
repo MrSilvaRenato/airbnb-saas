@@ -34,8 +34,11 @@ protected $fillable = [
         'garbage_recycling',
         'appliances_notes',
         'safety_notes',
-        'checkout_list'
-     
+        'checkout_list',
+
+        // auto-communication
+        'sent_at',
+        'auto_send',
 ];
 
 

@@ -137,16 +137,22 @@ class StripeWebhookController extends Controller
             $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
         }
 
-        // If subscription is active (or trialing), they are Pro.
-        // If canceled, we’ll treat them as free.
-        if (in_array($status, ['active', 'trialing', 'past_due'])) {
-            $user->plan                    = 'pro';
+        // Determine which plan from the Stripe price ID
+        $priceId   = $subscription->items->data[0]->price->id ?? null;
+        $planValue = match(true) {
+            $priceId === config(‘stripe.price_pro’)  => ‘pro’,
+            $priceId === config(‘stripe.price_host’) => ‘host’,
+            default                                  => ‘host’, // fallback for legacy price_id
+        };
+
+        if (in_array($status, [‘active’, ‘trialing’, ‘past_due’])) {
+            $user->plan                    = $planValue;
             $user->stripe_status           = $status;
             $user->stripe_subscription_id  = $subscription->id;
             $user->plan_renews_at          = $renewsAt;
         } else {
             // failed / canceled / incomplete => downgrade
-            $user->plan                    = 'free';
+            $user->plan                    = ‘free’;
             $user->stripe_status           = $status;
             $user->stripe_subscription_id  = $subscription->id;
             $user->plan_renews_at          = $renewsAt;

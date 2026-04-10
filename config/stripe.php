@@ -10,8 +10,12 @@ return [
     // Webhook signing secret (whsec_xxx)
     'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
 
-    // Price ID for Pro monthly subscription (price_xxx from Stripe dashboard)
-    'price_id' => env('STRIPE_PRICE_PRO', ''),
+    // Price IDs for each paid plan (set in .env)
+    'price_host' => env('STRIPE_PRICE_HOST', ''), // $19/mo — Host plan
+    'price_pro'  => env('STRIPE_PRICE_PRO', ''),  // $49/mo — Pro plan
+
+    // Legacy alias (kept for backwards compat during migration)
+    'price_id' => env('STRIPE_PRICE_HOST', ''),
 
     // Optional override URLs (you actually don't need these because you're already using route())
     'success_url' => env('STRIPE_SUCCESS_URL', ''),

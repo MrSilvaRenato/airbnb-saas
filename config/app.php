@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Host Welcome Pack'),
+    'name' => env('APP_NAME', 'HostFlows'),
 
     /*
     |--------------------------------------------------------------------------
