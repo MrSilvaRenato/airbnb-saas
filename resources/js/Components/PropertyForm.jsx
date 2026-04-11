@@ -144,7 +144,7 @@ export default function PropertyForm({ data, setData, errors = {}, processing, o
                         <Field label="Contact label" error={errors.brand_contact_label}>
                             <input className={INPUT} placeholder="Text us anytime" value={data.brand_contact_label} onChange={e => setData('brand_contact_label', e.target.value)} />
                         </Field>
-                        <Field label="Property logo / badge" hint="PNG, JPG or WEBP · max 4 MB · square works best." error={errors.brand_logo_file}>
+                        <Field label="Property logo / badge" hint="PNG, JPG or WEBP · max 5 MB · square works best." error={errors.brand_logo_file}>
                             {data.brand_logo_path ? (
                                 <div className="flex items-center gap-4 mb-3">
                                     <img src={data.brand_logo_path} alt="Logo" className="w-16 h-16 rounded-xl border object-cover" />
@@ -155,6 +155,7 @@ export default function PropertyForm({ data, setData, errors = {}, processing, o
                                 onChange={e => setData('brand_logo_file', e.target.files[0] || null)}
                                 className="block w-full text-sm text-gray-500 border border-gray-200 rounded-xl px-3 py-2 cursor-pointer bg-white file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                             />
+                            <p className="text-xs text-gray-400 mt-1">Leave blank to keep the current logo.</p>
                         </Field>
                     </div>
                 </SectionCard>
