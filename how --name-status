@@ -1,0 +1,95 @@
+[33m2c62100[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m ChatWidget on all auth pages; skip form for logged-in users; plan badge in admin drawer
+[33m9a08ab7[m Persist guest chat session in localStorage — resume on refresh/revisit
+[33mb722205[m Fix archive (add migration), bulk select/archive/delete, POST-based clear
+[33m7380965[m Add inbox management: filter tabs, search, archive, delete, bulk clear
+[33m499b111[m Redesign AdminChatDrawer to match ChatWidget professional UI
+[33meb8b23a[m Redesign ChatWidget with professional gradient UI, avatars, guest name display
+[33ma9159c3[m Fix 419 CSRF conflicts — use fetch instead of axios for chat, restore clean bootstrap
+[33mdf41886[m Fix CSRF via axios interceptor in bootstrap — resolves 419 on chat and logout
+[33m2a9609b[m Fix CSRF token on admin chat replies
+[33mb9dceef[m Fix timeAgo UTC offset for server timestamps
+[33m43c6202[m Fix CSRF token and input text color in chat widget
+[33m0329f60[m Add full live chat system — guest widget + admin drawer with polling
+[33m07b2a27[m Redesign landing page
+[33m2ace963[m Redesign landing page
+[33mabcd0cc[m Redesign landing page
+[33mae4d662[m Redesign landing page
+[33m5828664[m Redesign landing page
+[33md0beac5[m Redesign landing page
+[33m5997ab5[m Redesign landing page
+[33m07bd8d7[m Fix broken JSX tags after Recent Activity replacement
+[33m0282e30[m Replace Recent Activity with Upcoming Stays on dashboard
+[33m2b1b385[m Fix upgrade flow to use axios instead of Inertia router
+[33mde8550f[m Replace Laravel favicon with HostFlows SVG icon
+[33mc80cdc5[m Hide cancel/refund for admin-assigned plans without Stripe subscription
+[33mf5d2a1d[m Remove duplicate refund_requests migration
+[33mc8c4916[m Add Refund Requests link to admin dashboard nav
+[33mb2f2d23[m Add subscription cancel, refund request, and upgrade flows
+[33m116e440[m Redesign checkout page — dark featured card, trust strip, testimonials, FAQ
+[33mf07e437[m Add trust signals and loading overlay to checkout page
+[33m7a0a340[m Remove brand_logo_path from create form data to reduce payload size
+[33mbb3bdaf[m Redesign property create/edit UX — sectioned cards with accordion welcome fields
+[33m59daef9[m Redesign landing page as premium SaaS marketing page
+[33md509b09[m Merge branch 'claude/fervent-jones'
+[33mc37e42a[m[33m ([m[1;32mclaude/fervent-jones[m[33m)[m Rebuild calendar as Gantt timeline view
+[33mb53c258[m Merge branch 'claude/fervent-jones'
+[33mfed17a5[m Fix calendar date bug + add property filter + cleaner UI
+[33md161471[m Merge branch 'claude/fervent-jones'
+[33m2698862[m Polish guest page — warmer hero, cleaner tiles, simpler sections
+[33mdc00773[m Merge branch 'claude/fervent-jones'
+[33m750d20e[m Phase 7 & 8: CSV export buttons + mobile nav with drawer
+[33m1528efb[m Phase 6: host notifications — badge, guest view email, profile toggle
+[33mec1815e[m Merge branch 'claude/fervent-jones'
+[33mdc088cf[m[33m ([m[1;31morigin/claude/fervent-jones[m[33m)[m new
+[33me57fd16[m Resolve merge conflict in Checkout.jsx
+[33mdc8bf18[m Phase 4: auto_send toggle + billing fixes
+[33m791a3bb[m Save local changes to services.php
+[33m68800f6[m Save local changes to services.php
+[33mf556815[m Save local changes to services.php
+[33m5c616a6[m ok
+[33m183623c[m Merge pull request #3 from MrSilvaRenato/claude/fervent-jones
+[33m27ddd77[m Fix 419 CSRF error on checkout — use Inertia router.post instead of HTML form
+[33macd6f3b[m Merge pull request #2 from MrSilvaRenato/claude/fervent-jones
+[33mb91f1cc[m HostFlows platform expansion — 3 tiers, analytics, maintenance, guest emails
+[33mfc13e5e[m Merge pull request #1 from MrSilvaRenato/claude/fervent-jones
+[33m45f1260[m Fix admin dashboard mobile responsiveness with card layout
+[33me474cb4[m Ignore .claude worktrees folder
+[33m4962310[m AdminDashboard Addition
+[33m8101736[m AdminDashboard Addition
+[33m1245629[m AdminDashboard Addition
+[33m940d902[m AdminDashboard Addition
+[33m78116a3[m AdminDashboard Addition
+[33m68d47c9[m AdminDashboard Addition
+[33m42a527d[m AdminDashboard Addition
+[33m357faa3[m AdminDashboard Addition
+[33m16981c8[m AdminDashboard Addition
+[33ma730fc8[m Unregister service worker to fix stale cache
+[33m9c02512[m Unregister service worker to fix stale cache
+[33md9cce83[m Unregister service worker to fix stale cache
+[33m2435505[m Unregister service worker to fix stale cache
+[33mf73facb[m Remove sqlite DB from git
+[33m0180b91[m Remove sqlite DB from git
+[33m4e08252[m remove db from git
+[33maf0df1d[m testing
+[33m92f6920[m Delete database.sqlite
+[33m4d92800[m testing
+[33m9a51fc3[m testing
+[33m1ecb348[m testing
+[33m40a22e7[m testing
+[33m7e2fc3a[m testing
+[33m1807575[m testing
+[33mcf002a9[m testing
+[33m92e01f5[m testing
+[33meee3cea[m Update Landing.jsx
+[33m655dc34[m Remove database from git tracking
+[33m6e7feb6[m Update .gitignore
+[33m781de9f[m Update Landing.jsx
+[33mf88fb9d[m Update Landing.jsx
+[33mde38188[m Update Landing.jsx
+[33m53d7225[m Merge branch 'main' of https://github.com/MrSilvaRenato/airbnb-saas w# Please enter a commit message to explain why this merge is necessary, git push origin main# the commit.
+[33m026586d[m Add files via upload
+[33m104c0ee[m Recent updates
+[33m317439e[m Add files via upload
+[33m8c2f680[m Recent updates
+[33mf15efdd[m Final updates
+[33m9f9716d[m Full backup before billing integration
