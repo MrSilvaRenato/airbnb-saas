@@ -118,4 +118,27 @@ class ChatBotController extends Controller
         DB::table('chat_messages')->where('conversation_id', $conversation)->where('sender', 'guest')->whereNull('read_at')->update(['read_at' => now()]);
         return response()->json(['ok' => true]);
     }
+
+    public function archiveConversation($conversation)
+    {
+        DB::table('chat_conversations')->where('id', $conversation)->update(['status' => 'archived', 'updated_at' => now()]);
+        return response()->json(['ok' => true]);
+    }
+
+    public function deleteConversation($conversation)
+    {
+        DB::table('chat_messages')->where('conversation_id', $conversation)->delete();
+        DB::table('chat_conversations')->where('id', $conversation)->delete();
+        return response()->json(['ok' => true]);
+    }
+
+    public function clearConversations(Request $request)
+    {
+        $filter = $request->query('filter', 'closed');
+        $statuses = $filter === 'all' ? ['closed', 'archived'] : [$filter];
+        $ids = DB::table('chat_conversations')->whereIn('status', $statuses)->pluck('id');
+        DB::table('chat_messages')->whereIn('conversation_id', $ids)->delete();
+        DB::table('chat_conversations')->whereIn('id', $ids)->delete();
+        return response()->json(['ok' => true, 'deleted' => $ids->count()]);
+    }
 }
