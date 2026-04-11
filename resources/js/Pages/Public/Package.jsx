@@ -198,38 +198,25 @@ function SectionCard({ section, defaultOpen }) {
   const Icon = cfg.icon
 
   return (
-    <div
-      className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-4 ${cfg.border} overflow-hidden`}
-    >
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-[3px] ${cfg.border} overflow-hidden`}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-4 py-4 text-left active:bg-gray-50 transition-colors"
         aria-expanded={open}
       >
-        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${cfg.badge} border`}>
-          <Icon />
-        </span>
-        <span className="flex-1 font-semibold text-gray-900 text-sm leading-snug">
-          {section.title}
-        </span>
-        <span className={`shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
-          <Icons.chevron />
+        <span className="flex-1 font-semibold text-gray-900 text-sm leading-snug">{section.title}</span>
+        <span className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-400">
+            <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd"/>
+          </svg>
         </span>
       </button>
-
-      {/* Smooth collapse via max-height trick */}
-      <div
-        className="overflow-hidden transition-all duration-300 ease-in-out"
-        style={{ maxHeight: open ? '2000px' : '0px' }}
-      >
-        <div className="px-4 pb-5">
-          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border mb-3 ${cfg.badge}`}>
-            <Icon />
-            <span>{cfg.label}</span>
-          </div>
-          <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
-            {section.body}
-          </p>
+      <div className="overflow-hidden transition-all duration-300 ease-in-out" style={{ maxHeight: open ? '2000px' : '0px' }}>
+        <div className="px-4 pb-5 pt-1">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border mb-3 ${cfg.badge}`}>
+            <Icon />{cfg.label}
+          </span>
+          <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{section.body}</p>
         </div>
       </div>
     </div>
@@ -245,26 +232,26 @@ function QuickTile({ icon: TileIcon, label, value, onTap, href, copied }) {
   const inner = (
     <div
       className={`
-        flex flex-col justify-between
-        bg-white rounded-2xl shadow-sm border border-gray-100
-        px-4 py-3 min-h-[80px] min-w-[140px]
-        active:scale-95 transition-transform duration-100
+        flex flex-col gap-2
+        rounded-2xl border min-w-[140px] px-4 py-3.5
+        active:scale-95 transition-all duration-100
         cursor-pointer select-none
+        ${copied ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100 shadow-sm'}
       `}
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-gray-400">
-          <TileIcon />
+      <div className="flex items-center justify-between">
+        <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${copied ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-50 text-indigo-500'}`}>
+          {copied ? <Icons.check /> : <TileIcon />}
         </span>
-        {copied ? (
-          <span className="text-emerald-500"><Icons.check /></span>
-        ) : (
-          <span className="text-gray-300"><Icons.copy /></span>
+        {!href && (
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${copied ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+            {copied ? 'Copied!' : 'Tap'}
+          </span>
         )}
       </div>
       <div>
-        <div className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-0.5">{label}</div>
-        <div className="font-semibold text-gray-900 text-sm leading-tight break-all">{value}</div>
+        <div className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">{label}</div>
+        <div className="font-semibold text-gray-900 text-sm leading-tight break-all mt-0.5">{value}</div>
       </div>
     </div>
   )
@@ -473,7 +460,7 @@ export default function Package() {
       {/* ── HERO ──────────────────────────────── */}
       <div
         ref={heroRef}
-        className="relative bg-gradient-to-br from-gray-950 via-gray-800 to-gray-700 text-white overflow-hidden"
+        className="relative bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-800 text-white overflow-hidden"
       >
         {/* Decorative blobs */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
@@ -499,15 +486,23 @@ export default function Package() {
             <p className="text-white/50 text-sm mt-1 mb-5 leading-snug">{pkg.address}</p>
           )}
 
-          {/* Date pill */}
+          {/* Date pill + nights */}
           {(checkIn || checkOut) && (
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90">
-              <Icons.calendar className="w-4 h-4 text-white/60" />
-              {checkIn && <span>{fmtFull(checkIn)}</span>}
-              {checkIn && checkOut && (
-                <span className="text-white/40">→</span>
-              )}
-              {checkOut && <span>{fmtFull(checkOut)}</span>}
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm font-medium text-white/90">
+                <Icons.calendar className="w-4 h-4 text-white/60" />
+                {checkIn && <span>{fmt(checkIn)}</span>}
+                {checkIn && checkOut && <span className="text-white/40">→</span>}
+                {checkOut && <span>{fmt(checkOut)}</span>}
+              </div>
+              {checkIn && checkOut && (() => {
+                const nights = Math.round((new Date(checkOut + 'T00:00:00') - new Date(checkIn + 'T00:00:00')) / 86400000)
+                return nights > 0 ? (
+                  <div className="inline-flex items-center bg-white/20 rounded-full px-3 py-1.5 text-xs font-semibold text-white">
+                    {nights} night{nights !== 1 ? 's' : ''}
+                  </div>
+                ) : null
+              })()}
             </div>
           )}
         </div>
@@ -520,7 +515,7 @@ export default function Package() {
         {(wifiName || lockCode || hostPhone || checkIn) && (
           <div className="-mx-4 px-4 mt-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Quick Access</p>
-            <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide snap-x snap-mandatory">
+            <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory" style={{scrollbarWidth:'none',msOverflowStyle:'none'}}>
 
               {/* Wi-Fi */}
               {wifiName && (
@@ -650,27 +645,24 @@ export default function Package() {
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pkg.address)}`}
               target="_blank"
               rel="noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-700 active:bg-gray-50 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-indigo-50 text-indigo-700 text-sm font-semibold active:bg-indigo-100 transition-colors"
             >
-              <Icons.map className="text-gray-500" />
-              Open Maps
+              <Icons.map />
+              Directions
             </a>
           )}
           <button
             onClick={async () => {
               if (navigator.share) {
-                try {
-                  await navigator.share(shareData)
-                  return
-                } catch { /* fall back */ }
+                try { await navigator.share(shareData); return } catch {}
               }
               const ok = await copyText(window.location.href)
               if (ok) showToast('Link copied!')
             }}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-gray-200 bg-white text-sm font-medium text-gray-700 active:bg-gray-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-100 text-gray-700 text-sm font-semibold active:bg-gray-200 transition-colors"
           >
-            <Icons.share className="text-gray-500" />
-            Share Page
+            <Icons.share />
+            Share
           </button>
         </div>
 
