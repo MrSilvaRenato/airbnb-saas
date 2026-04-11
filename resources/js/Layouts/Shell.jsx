@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link, usePage, router } from '@inertiajs/react'
 import Toast from '@/Components/Toast'
 
@@ -20,8 +20,12 @@ function NavLink({ href, children }) {
 }
 
 export default function Shell({ title, children, right = null }) {
-  const { auth, impersonating, unreadVisits = 0 } = usePage().props
+  const page = usePage()
+  const { auth, impersonating, unreadVisits = 0 } = page.props
+  const currentUrl = page.url
   const user = auth?.user
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const isActive = (path) => (currentUrl || '').startsWith(path)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,27 +122,46 @@ export default function Shell({ title, children, right = null }) {
 
       {/* Mobile bottom bar */}
       {user && (
-        <div className="sm:hidden fixed bottom-4 left-1/2 -translate-x-1/2 px-3 py-2 rounded-full shadow-lg bg-white border flex gap-2">
-          <Link href="/host/dashboard" className="px-3 py-1.5 rounded-lg text-sm bg-gray-100">
-            Dashboard
-          </Link>
-          <Link href="/host/calendar" className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-              <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
-            </svg>
-            Calendar
-          </Link>
-          <Link href="/host/analytics" className="px-3 py-1.5 rounded-lg text-sm">
-            Analytics
-          </Link>
-          <Link href="/billing/manage" className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-              <line x1="1" y1="10" x2="23" y2="10" />
-            </svg>
-            Billing
-          </Link>
-        </div>
+        <>
+          <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-40 flex">
+            {[
+              { href: '/host/dashboard', label: 'Home', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 12l8.954-8.955a1.5 1.5 0 012.092 0L22.5 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /> },
+              { href: '/host/calendar', label: 'Calendar', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /> },
+              { href: '/host/analytics', label: 'Analytics', icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /> },
+            ].map(tab => (
+              <Link key={tab.href} href={tab.href} className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium ${isActive(tab.href) ? 'text-indigo-600' : 'text-gray-400'}`}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">{tab.icon}</svg>
+                {tab.label}
+              </Link>
+            ))}
+            <button onClick={() => setDrawerOpen(true)} className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium text-gray-400">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+              More
+            </button>
+          </div>
+
+          {/* Slide-up drawer */}
+          {drawerOpen && (
+            <>
+              <div className="sm:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setDrawerOpen(false)} />
+              <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 p-4 pb-10">
+                <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+                <nav className="space-y-1">
+                  {user.plan === 'pro' && <Link href="/host/maintenance" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">🔧 Maintenance</Link>}
+                  <Link href="/billing/manage" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">💳 Billing</Link>
+                  <Link href="/profile" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">👤 Profile</Link>
+                  <a href={route('export.stays')} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">⬇️ Export Stays</a>
+                  <Link href={route('logout')} method="post" as="button" className="w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium text-red-500">🚪 Logout</Link>
+                </nav>
+              </div>
+            </>
+          )}
+
+          {/* Spacer so content isn't hidden behind bottom bar */}
+          <div className="sm:hidden h-16" />
+        </>
       )}
 
       <Toast />
