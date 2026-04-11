@@ -25,7 +25,6 @@ export default function Create() {
         default_checkout_list: '',
         brand_display_name: '',
         brand_contact_label: '',
-        brand_logo_path: '',
         brand_logo_file: null,
     })
 
