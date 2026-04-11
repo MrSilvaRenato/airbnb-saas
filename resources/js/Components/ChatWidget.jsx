@@ -26,6 +26,12 @@ function Avatar({ letter, color = 'indigo' }) {
     )
 }
 
+const LS_KEY = 'hf_chat'
+
+function saveSession(id, name) { try { localStorage.setItem(LS_KEY, JSON.stringify({ id, name })) } catch {} }
+function loadSession()         { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null') } catch { return null } }
+function clearSession()        { try { localStorage.removeItem(LS_KEY) } catch {} }
+
 export default function ChatWidget() {
     const [open, setOpen]           = useState(false)
     const [available, setAvailable] = useState(false)
@@ -44,6 +50,21 @@ export default function ChatWidget() {
 
     useEffect(() => {
         fetch('/chat-status').then(r => r.json()).then(d => setAvailable(!!d.available)).catch(() => {})
+
+        // Resume previous session if one exists
+        const session = loadSession()
+        if (session?.id) {
+            fetch(`/chat/${session.id}/poll`).then(r => r.json()).then(d => {
+                if (d.messages) {
+                    setConvId(session.id)
+                    setName(session.name || '')
+                    setMessages(d.messages)
+                    setPhase(d.status === 'closed' ? 'closed' : 'chat')
+                } else {
+                    clearSession()
+                }
+            }).catch(() => {})
+        }
     }, [])
 
     useEffect(() => {
@@ -70,10 +91,17 @@ export default function ChatWidget() {
             if (res.conversation_id) {
                 setConvId(res.conversation_id)
                 setMessages([{ id: 1, sender: 'guest', body: firstMsg, created_at: new Date().toISOString() }])
+                saveSession(res.conversation_id, name)
                 setPhase('chat')
             } else { setError('Could not start chat. Try again.') }
         } catch { setError('Could not start chat. Try again.') }
         setSending(false)
+    }
+
+    function startNewChat() {
+        clearSession()
+        setConvId(null); setMessages([]); setName(''); setEmail(''); setFirstMsg(''); setReply(''); setError('')
+        setPhase('form')
     }
 
     async function sendReply(e) {
@@ -118,6 +146,11 @@ export default function ChatWidget() {
                                 <span className="text-white/70 text-xs">{available ? 'We\'re online' : 'Currently offline'}</span>
                             </div>
                         </div>
+                        {(phase === 'chat' || phase === 'closed') && (
+                            <button onClick={startNewChat} title="New chat" className="text-white/50 hover:text-white transition mr-1">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                            </button>
+                        )}
                         <button onClick={() => setOpen(false)} className="text-white/50 hover:text-white transition">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
@@ -181,9 +214,10 @@ export default function ChatWidget() {
                         })}
 
                         {phase === 'closed' && (
-                            <div className="text-center py-4">
+                            <div className="text-center py-6">
                                 <div className="text-xs text-gray-400 bg-gray-100 rounded-full inline-block px-3 py-1">Conversation ended</div>
                                 <p className="text-xs text-gray-400 mt-2">Need more help? <a href="mailto:support@hostflows.com.au" className="text-indigo-500 hover:underline">Email us</a></p>
+                                <button onClick={startNewChat} className="mt-3 text-xs text-indigo-600 hover:underline font-medium">Start a new chat →</button>
                             </div>
                         )}
 
