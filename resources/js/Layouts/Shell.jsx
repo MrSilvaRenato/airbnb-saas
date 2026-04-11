@@ -20,7 +20,7 @@ function NavLink({ href, children }) {
 }
 
 export default function Shell({ title, children, right = null }) {
-  const { auth, impersonating } = usePage().props
+  const { auth, impersonating, unreadVisits = 0 } = usePage().props
   const user = auth?.user
 
   return (
@@ -51,7 +51,16 @@ export default function Shell({ title, children, right = null }) {
             <div className="hidden sm:flex items-center gap-1">
               {user && (
                 <>
-                  <NavLink href="/host/dashboard">Dashboard</NavLink>
+                  <NavLink href="/host/dashboard">
+                    <span className="flex items-center gap-1">
+                      Dashboard
+                      {unreadVisits > 0 && (
+                        <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                          {unreadVisits > 9 ? '9+' : unreadVisits}
+                        </span>
+                      )}
+                    </span>
+                  </NavLink>
                   <NavLink href="/host/calendar">
                     <span className="flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">

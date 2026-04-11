@@ -11,11 +11,30 @@ class PublicPackageController extends Controller
     public function show(WelcomePackage $package) // route uses {package:slug}
     {
         // Log a visit for analytics
-        $package->visits()->create([
+        $visit = $package->visits()->create([
             'visited_at' => now(),
             'ip'         => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
+
+        // Notify host if opted in — debounce: once per 2h per package
+        try {
+            $package->load('property.user');
+            $host = $package->property?->user;
+            if ($host && $host->notify_on_guest_view) {
+                $alreadyNotified = $package->visits()
+                    ->whereNotNull('host_notified_at')
+                    ->where('host_notified_at', '>=', now()->subHours(2))
+                    ->exists();
+                if (!$alreadyNotified) {
+                    \Illuminate\Support\Facades\Mail::to($host->email)
+                        ->send(new \App\Mail\GuestViewedPackage($package));
+                    $visit->update(['host_notified_at' => now()]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // never break guest page for notification failure
+        }
 
         // Eager-load property (+user so we can see plan) and ordered sections.
         // IMPORTANT: include all the default_* cols so we can fall back.

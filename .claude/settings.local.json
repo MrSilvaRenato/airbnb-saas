@@ -10,7 +10,8 @@
       "Bash(php artisan:*)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh pr create --title 'HostFlows Platform Expansion — Phases 1-8' --body ':*)"
     ]
   }
 }
