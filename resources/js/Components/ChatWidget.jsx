@@ -32,14 +32,14 @@ function saveSession(id, name) { try { localStorage.setItem(LS_KEY, JSON.stringi
 function loadSession()         { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null') } catch { return null } }
 function clearSession()        { try { localStorage.removeItem(LS_KEY) } catch {} }
 
-export default function ChatWidget() {
+export default function ChatWidget({ authUser = null }) {
     const [open, setOpen]           = useState(false)
     const [available, setAvailable] = useState(false)
     const [phase, setPhase]         = useState('form')
     const [convId, setConvId]       = useState(null)
     const [messages, setMessages]   = useState([])
-    const [name, setName]           = useState('')
-    const [email, setEmail]         = useState('')
+    const [name, setName]           = useState(authUser?.name || '')
+    const [email, setEmail]         = useState(authUser?.email || '')
     const [firstMsg, setFirstMsg]   = useState('')
     const [reply, setReply]         = useState('')
     const [sending, setSending]     = useState(false)
@@ -57,7 +57,7 @@ export default function ChatWidget() {
             fetch(`/chat/${session.id}/poll`).then(r => r.json()).then(d => {
                 if (d.messages) {
                     setConvId(session.id)
-                    setName(session.name || '')
+                    setName(session.name || authUser?.name || '')
                     setMessages(d.messages)
                     setPhase(d.status === 'closed' ? 'closed' : 'chat')
                 } else {
@@ -87,7 +87,7 @@ export default function ChatWidget() {
         e.preventDefault()
         setSending(true); setError('')
         try {
-            const res = await post('/chat/start', { name, email, message: firstMsg })
+            const res = await post('/chat/start', { name, email, message: firstMsg, plan: authUser?.plan ?? 'guest' })
             if (res.conversation_id) {
                 setConvId(res.conversation_id)
                 setMessages([{ id: 1, sender: 'guest', body: firstMsg, created_at: new Date().toISOString() }])
@@ -100,7 +100,7 @@ export default function ChatWidget() {
 
     function startNewChat() {
         clearSession()
-        setConvId(null); setMessages([]); setName(''); setEmail(''); setFirstMsg(''); setReply(''); setError('')
+        setConvId(null); setMessages([]); setName(authUser?.name || ''); setEmail(authUser?.email || ''); setFirstMsg(''); setReply(''); setError('')
         setPhase('form')
     }
 
@@ -177,12 +177,21 @@ export default function ChatWidget() {
                                 <div className="flex gap-3">
                                     <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shrink-0">H</div>
                                     <div className="bg-white rounded-2xl rounded-tl-sm shadow-sm border border-gray-100 px-4 py-3 text-sm text-gray-700 max-w-[85%]">
-                                        👋 Hi there! Fill in your details and we'll get back to you right away.
+                                        {authUser ? `👋 Hi ${authUser.name.split(' ')[0]}! How can we help you today?` : "👋 Hi there! Fill in your details and we'll get back to you right away."}
                                     </div>
                                 </div>
                                 <form onSubmit={startChat} className="space-y-2.5 pt-1">
-                                    <input required className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
-                                    <input required type="email" className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" placeholder="Your email" value={email} onChange={e => setEmail(e.target.value)} />
+                                    {authUser && (
+                                        <div className="flex items-center gap-2 px-1 py-1.5 bg-indigo-50 rounded-xl border border-indigo-100">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">{authUser.name[0].toUpperCase()}</div>
+                                            <div className="min-w-0">
+                                                <div className="text-xs font-semibold text-indigo-800 truncate">{authUser.name}</div>
+                                                <div className="text-[10px] text-indigo-400 truncate">{authUser.email}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!authUser && <input required className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />}
+                                    {!authUser && <input required type="email" className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" placeholder="Your email" value={email} onChange={e => setEmail(e.target.value)} />}
                                     <textarea required rows={3} className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" placeholder="How can we help you?" value={firstMsg} onChange={e => setFirstMsg(e.target.value)} />
                                     {error && <p className="text-xs text-red-500 flex items-center gap-1">⚠ {error}</p>}
                                     <button type="submit" disabled={sending} className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 disabled:opacity-50 transition shadow-sm shadow-indigo-200">

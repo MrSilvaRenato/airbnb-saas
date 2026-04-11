@@ -262,6 +262,11 @@ export default function AdminChatDrawer() {
                                         <div className="flex items-center gap-1.5 mb-0.5">
                                             <GuestAvatar name={c.guest_name} size="sm" />
                                             <span className="text-xs font-semibold text-gray-900 truncate flex-1">{c.guest_name}</span>
+                                            {c.plan && c.plan !== 'guest' && (
+                                                <span className={`text-[8px] font-bold px-1 py-0.5 rounded shrink-0 ${c.plan === 'pro' ? 'bg-emerald-100 text-emerald-700' : c.plan === 'host' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {c.plan.toUpperCase()}
+                                                </span>
+                                            )}
                                             {c.unread > 0 && (
                                                 <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0">{c.unread}</span>
                                             )}
@@ -314,7 +319,14 @@ export default function AdminChatDrawer() {
                                 </button>
                                 <GuestAvatar name={active.guest_name} />
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-semibold text-gray-900 truncate">{active.guest_name}</div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="text-xs font-semibold text-gray-900 truncate">{active.guest_name}</div>
+                                        {active.plan && active.plan !== 'guest' && (
+                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded shrink-0 ${active.plan === 'pro' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                                                {active.plan.toUpperCase()}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="text-[10px] text-gray-400 truncate">{active.guest_email}</div>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
