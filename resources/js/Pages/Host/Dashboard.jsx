@@ -105,6 +105,7 @@ export default function Dashboard() {
     limits,
     recentlyUpgraded,
     activities = [],
+    stays = [],
     onboarding = { step: 0, skipped: false },
   } = usePage().props;
 
@@ -996,111 +997,37 @@ const IconBroom = () => (
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Upcoming Stays */}
       <div className="rounded-2xl border bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Recent Activity</h3>
-          
-          <span className="text-xs text-gray-500">Last updates</span>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900">Upcoming Stays</h3>
+          <a href={route('host.calendar')} className="text-xs text-indigo-600 hover:underline">View calendar →</a>
         </div>
-         <div className="mt-0 flex justify-end">
-    <button
-      onClick={() => setConfirmClearAct(true)}
-     className="px-3 py-1.5 rounded-lg border bg-white text-xs hover:bg-gray-100
-             inline-flex items-center gap-1.5
-             [&_svg]:w-3.5 [&_svg]:h-3.5 [&_svg]:fill-none [&_svg]:stroke-current"
->
-  <IconBroom />
-      Clear Activities
-    </button>
-    {/* Clear Activities modal */}
-{confirmClearAct && (
-  <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl">
-      <h3 className="text-lg font-semibold">Clear activity history?</h3>
-      <p className="text-sm text-gray-600 mt-1">
-        This will remove all entries from your Recent Activity.
-      </p>
-      <div className="mt-4 flex gap-3 justify-end">
-        <button
-          className="px-3 py-2 rounded-lg border bg-white hover:bg-gray-100 transition-colors"
-          onClick={() => setConfirmClearAct(false)}
-        >
-          Cancel
-        </button>
-        <button
-          className="px-3 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
-          onClick={() => {
-            router.post(route('activities.clear'), {}, {
-              preserveScroll: true,
-              onFinish: () => setConfirmClearAct(false),
-            });
-          }}
-        >
-          Clear
-        </button>
+        {(() => {
+          const today = new Date().toISOString().slice(0,10)
+          const upcoming = (stays || []).filter(s => s.check_in_date >= today).slice(0,6)
+          if (!upcoming.length) return <div className="py-6 text-center text-xs text-gray-400">No upcoming stays scheduled.</div>
+          return (
+            <ul className="divide-y">
+              {upcoming.map(s => {
+                const nights = Math.round((new Date(s.check_out_date) - new Date(s.check_in_date)) / 86400000)
+                const daysUntil = Math.round((new Date(s.check_in_date + 'T00:00:00') - new Date()) / 86400000)
+                return (
+                  <li key={s.id} className="py-2.5 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900 truncate">{s.guest_first_name || 'Guest'}</div>
+                      <div className="text-xs text-gray-400 truncate">{s.property_title} · {nights}n · {s.check_in_date}</div>
+                    </div>
+                    <span className={'text-xs font-bold px-2 py-1 rounded-full shrink-0 ' + (daysUntil <= 0 ? 'bg-red-100 text-red-600' : daysUntil <= 7 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500')}>
+                      {daysUntil <= 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : daysUntil + 'd'}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        })()}
       </div>
-    </div>
-  </div>
-)}
-
-  </div>
-   {/* // inside the sidebar card "Recent Activity" */}
-               {activities?.length ? (
-  <ul className="divide-y">
-    {activities.map(a => {
-      const v = activityVisual(a);
-      const AIcon = v.icon;
-      const TIcon = v.typeIcon;
-      return (
-        <li key={a.id} className="py-2 flex items-center justify-between gap-3">
-  <div className="min-w-0">
-    <div className="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
-      <span className="truncate">{a.title}</span>
-      <span
-        className={
-          "text-[10px] px-1.5 py-0.5 rounded ring-1 ring-inset " + toneFor(a.action)
-        }
-      >
-        {a.action?.toLowerCase()}
-      </span>
-    </div>
-
-    <div className="text-xs text-gray-500 truncate">
-      {(a.subtitle && a.subtitle.trim()) || "—"} &nbsp;•&nbsp; {timeAgo(a.timestamp)}
-    </div>
-  </div>
-
-  <div className="shrink-0 flex gap-2">
-    {a.openUrl && (
-      <a
-        href={a.openUrl}  
-        className="px-2 py-1 rounded border bg-white text-xs hover:bg-gray-100"
-      >
-        Open
-      </a>
-    )}
-    {a.editUrl && (
-      <a
-        href={a.editUrl}
-        className="px-2 py-1 rounded border bg-white text-xs hover:bg-gray-100"
-      >
-        Edit
-      </a>
-    )}
-  </div>
-</li>
-
-
-      );
-    })}
-  </ul>
-) : (
-  <div className="text-xs text-gray-400">No recent changes.</div>
-)}
-      </div>
-      
-    </div>
     
   </aside>
   
