@@ -66,6 +66,9 @@ export default function AdminDashboard() {
                     <div className="text-lg font-semibold">Admin Dashboard</div>
                     <div className="text-sm text-gray-500">Manage customers and subscriptions</div>
                 </div>
+                <a href={route('admin.refunds')} className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                    Refund Requests
+                </a>
             </div>
 
             {/* KPI Cards */}
