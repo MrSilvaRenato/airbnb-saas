@@ -8,10 +8,8 @@
     <title inertia>{{ config('app.name', 'Welcome Pack') }}</title>
     <meta name="description" content="Your digital Airbnb welcome book: Wi-Fi, check-in steps, house rules, local tips, and emergency info in one clean QR-accessible page for every stay." />
 
-    {{-- Favicons / icons --}}
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+    {{-- Favicon --}}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234F46E5'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui,sans-serif' font-size='18' font-weight='700' fill='white'>H</text></svg>" />
 
     {{-- Apple / iOS --}}
     <link rel="apple-touch-icon" href="/icons/ios-180.png" />
