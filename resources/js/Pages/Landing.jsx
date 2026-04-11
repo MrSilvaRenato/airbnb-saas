@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Head, useForm } from "@inertiajs/react";
-import ChatWidget from "@/Components/ChatWidget";
+import ChatWidget from "@/Components/ChatWidget.jsx";
 
 /* ── AUTH MODAL (unchanged logic) ─────────────────────────────── */
 function AuthModal({ mode, setMode, loginForm, registerForm, submitLogin, submitRegister }) {
