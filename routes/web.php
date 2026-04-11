@@ -24,9 +24,20 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ChatBotController;
 
 
-// ChatBot
-Route::post('/admin/toggle-chat', [ChatBotController::class, 'toggleChat']);
+// ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
+Route::post('/chat/start', [ChatBotController::class, 'startConversation']);
+Route::post('/chat/{conversation}/message', [ChatBotController::class, 'guestMessage']);
+Route::get('/chat/{conversation}/poll', [ChatBotController::class, 'poll']);
+
+// ChatBot — admin
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::post('/admin/toggle-chat', [ChatBotController::class, 'toggleChat']);
+    Route::get('/admin/chat/conversations', [ChatBotController::class, 'conversations']);
+    Route::post('/admin/chat/{conversation}/reply', [ChatBotController::class, 'adminReply']);
+    Route::post('/admin/chat/{conversation}/close', [ChatBotController::class, 'closeConversation']);
+    Route::post('/admin/chat/{conversation}/read', [ChatBotController::class, 'markRead']);
+});
 
 /*
 |--------------------------------------------------------------------------

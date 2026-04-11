@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { usePage, router } from "@inertiajs/react";
 import Shell from "@/Layouts/Shell";
+import AdminChatDrawer from "@/Components/AdminChatDrawer";
 
 function initials(name) {
     return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -316,6 +317,7 @@ const toggleChatAvailability = () => {
                     </div>
                 </div>
             )}
+        <AdminChatDrawer />
         </Shell>
     );
 }
