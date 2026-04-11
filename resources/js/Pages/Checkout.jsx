@@ -84,16 +84,23 @@ const btnColor = {
 };
 
 export default function Checkout({ userPlan, checkoutRoute }) {
-    const handleUpgrade = async (planKey) => {
+    const [loading, setLoading] = React.useState(null)
+    const [error, setError] = React.useState(null)
+
+    const handleUpgrade = async (planKey, planName) => {
+        setLoading(planKey)
+        setError(null)
         try {
             const res = await axios.post(checkoutRoute, { plan: planKey });
             if (res?.data?.url) {
                 window.location.href = res.data.url;
             } else {
-                console.error("No checkout URL returned", res);
+                setError('Could not start checkout. Please try again.')
+                setLoading(null)
             }
         } catch (err) {
-            console.error("Checkout error", err);
+            setError('Something went wrong. Please try again.')
+            setLoading(null)
         }
     };
 
@@ -101,14 +108,42 @@ export default function Checkout({ userPlan, checkoutRoute }) {
         <>
             <Head title="HostFlows — Choose Your Plan" />
 
+            {/* Redirect overlay */}
+            {loading && (
+                <div className="fixed inset-0 z-50 bg-white/90 backdrop-blur flex flex-col items-center justify-center gap-4">
+                    <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                    <div className="text-center">
+                        <div className="font-semibold text-gray-900">Redirecting to secure checkout…</div>
+                        <div className="text-sm text-gray-400 mt-1">You'll be taken to Stripe — the world's most trusted payment platform.</div>
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                        <span className="flex items-center gap-1">🔒 256-bit SSL</span>
+                        <span className="flex items-center gap-1">✓ Cancel anytime</span>
+                        <span className="flex items-center gap-1">✓ No hidden fees</span>
+                    </div>
+                </div>
+            )}
+
             <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4 py-14">
                 <div className="w-full max-w-5xl">
+
+                    {/* Trust bar */}
+                    <div className="flex items-center justify-center gap-6 mb-8 text-xs text-gray-400">
+                        <span className="flex items-center gap-1.5">🔒 Secure checkout via Stripe</span>
+                        <span className="flex items-center gap-1.5">✓ Cancel anytime</span>
+                        <span className="flex items-center gap-1.5">✓ No lock-in contracts</span>
+                    </div>
+
                     <div className="text-center mb-10">
                         <h1 className="text-3xl font-bold text-gray-900">Simple, transparent pricing</h1>
                         <p className="mt-2 text-gray-500 text-sm max-w-lg mx-auto">
                             Start free, upgrade when you're ready. Cancel any time — your plan updates instantly after checkout.
                         </p>
                     </div>
+
+                    {error && (
+                        <div className="mb-6 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 text-center">{error}</div>
+                    )}
 
                     <div className="grid gap-6 md:grid-cols-3">
                         {PLANS.map((plan) => {
@@ -157,10 +192,11 @@ export default function Checkout({ userPlan, checkoutRoute }) {
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => handleUpgrade(plan.key)}
-                                                className={`w-full rounded-lg py-2.5 text-sm font-semibold shadow transition-colors ${btnColor[plan.color]}`}
+                                                onClick={() => handleUpgrade(plan.key, plan.name)}
+                                                disabled={!!loading}
+                                                className={`w-full rounded-lg py-2.5 text-sm font-semibold shadow transition-colors disabled:opacity-60 ${btnColor[plan.color]}`}
                                             >
-                                                Upgrade to {plan.name}
+                                                {loading === plan.key ? 'Redirecting…' : `Upgrade to ${plan.name}`}
                                             </button>
                                         )}
                                     </div>
@@ -169,9 +205,10 @@ export default function Checkout({ userPlan, checkoutRoute }) {
                         })}
                     </div>
 
-                    <p className="mt-10 text-center text-xs text-gray-400">
-                        Guests open your link on their phone at the door — your logo, check-in steps, Wi-Fi, and house rules all in one place. No more "can you resend the code?" texts at 11pm.
-                    </p>
+                    <div className="mt-10 text-center space-y-2">
+                        <p className="text-xs text-gray-400">Payments processed securely by <span className="font-semibold text-gray-500">Stripe</span> — used by millions of businesses worldwide.</p>
+                        <p className="text-xs text-gray-400">Questions? Email <a href="mailto:support@hostflows.com.au" className="underline hover:text-gray-600">support@hostflows.com.au</a></p>
+                    </div>
                 </div>
             </div>
         </>
