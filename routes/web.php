@@ -21,11 +21,12 @@ use App\Http\Controllers\ExportController;
 use App\Http\Middleware\EnsureHost;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ChatBotController;
 
 
-
-
-
+// ChatBot
+Route::post('/admin/toggle-chat', [ChatBotController::class, 'toggleChat']);
+Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
 
 /*
 |--------------------------------------------------------------------------

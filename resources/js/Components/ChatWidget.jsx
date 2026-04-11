@@ -1,22 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [agentAvailable, setAgentAvailable] = useState(false);
 
-  // 🔥 Toggle this manually or later connect to backend
-  const agentAvailable = false;
+  useEffect(() => {
+    fetch('/chat-status')
+      .then(res => res.json())
+      .then(data => setAgentAvailable(data.available));
+  }, []);
 
   return (
     <>
-      {/* Floating Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-5 right-5 bg-black text-white px-4 py-2 rounded-full shadow-lg hover:bg-gray-800"
+        className="fixed bottom-5 right-5 bg-black text-white px-4 py-2 rounded-full shadow-lg"
       >
         Chat
       </button>
 
-      {/* Chat Box */}
       {open && (
         <div className="fixed bottom-20 right-5 w-80 bg-white border rounded-2xl shadow-xl p-4">
           <div className="flex justify-between items-center mb-2">
@@ -34,8 +36,7 @@ export default function ChatWidget() {
                 Thanks for reaching out through our live chat. Our support team
                 is unavailable right now. <br /><br />
                 Please email us at{" "}
-                <span className="font-medium">support@yourdomain.com</span> and
-                we will get back to you.
+                <span className="font-medium">support@hostflows.com.au</span>
               </p>
             )}
           </div>

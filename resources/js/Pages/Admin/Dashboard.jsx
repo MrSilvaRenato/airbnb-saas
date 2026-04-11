@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { usePage, router } from "@inertiajs/react";
 import Shell from "@/Layouts/Shell";
 
@@ -24,8 +24,23 @@ export default function AdminDashboard() {
     const [planFilter, setPlanFilter] = React.useState("");
     const [sort, setSort] = React.useState("newest");
     const [confirmDelete, setConfirmDelete] = React.useState(null);
+    const [chatAvailable, setChatAvailable] = useState(false);
+    const [chatLoading, setChatLoading] = useState(false);  
 
-    const filtered = React.useMemo(() => {
+
+    useEffect(() => {
+    fetch('/chat-status', {
+        headers: {
+            Accept: 'application/json',
+        },
+    })
+        .then(res => res.json())
+        .then(data => setChatAvailable(!!data.available))
+        .catch(() => setChatAvailable(false));
+}, []);
+   
+
+const filtered = React.useMemo(() => {
         let list = [...users].filter(u => {
             const matchQ = !q || (u.name + u.email).toLowerCase().includes(q.toLowerCase());
             const matchP = !planFilter || u.plan === planFilter;
@@ -56,6 +71,33 @@ export default function AdminDashboard() {
     router.post(route("admin.users.impersonate", user.id), {}, {
         preserveScroll: false,
     });
+};
+
+
+const toggleChatAvailability = async () => {
+    setChatLoading(true);
+
+    try {
+        const token = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content');
+
+        const res = await fetch('/admin/toggle-chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+            },
+        });
+
+        const data = await res.json();
+        setChatAvailable(!!data.available);
+    } catch (error) {
+        console.error('Toggle chat failed:', error);
+    } finally {
+        setChatLoading(false);
+    }
 };
 
     return (
@@ -233,7 +275,29 @@ export default function AdminDashboard() {
                 </table>
                 <div className="px-4 py-2 text-xs text-gray-400 border-t">{filtered.length} user{filtered.length !== 1 ? "s" : ""} shown</div>
             </div>
+<div className="mt-4 flex items-center gap-3">
+    <div
+        className={`px-3 py-1 rounded-full text-xs font-medium ${
+            chatAvailable
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+        }`}
+    >
+        {chatAvailable ? "Chat Available" : "Chat Offline"}
+    </div>
 
+    <button
+        onClick={toggleChatAvailability}
+        disabled={chatLoading}
+        className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
+    >
+        {chatLoading
+            ? "Updating..."
+            : chatAvailable
+            ? "Set Offline"
+            : "Go Live"}
+    </button>
+</div>
             {/* Delete confirm modal */}
             {confirmDelete && (
                 <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
