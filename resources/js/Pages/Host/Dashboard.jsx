@@ -1028,10 +1028,9 @@ const IconBroom = () => (
           )
         })()}
       </div>
-    
-  </aside>
-  
-</div>
+        </div>
+      </aside>
+    </div>
 
 
       {/* delete property modal */}
