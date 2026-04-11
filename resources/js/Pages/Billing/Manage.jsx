@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react'
+import { Head, Link, router, usePage } from '@inertiajs/react'
+import axios from 'axios'
 import Shell from '@/Layouts/Shell'
 
 const PLAN = {
@@ -46,11 +47,21 @@ export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, h
         })
     }
 
-    function upgradeTo(planKey) {
+    async function upgradeTo(planKey) {
         setSubmitting(true)
-        router.post(route('billing.upgrade-subscription'), { plan: planKey }, {
-            onFinish: () => setSubmitting(false),
-        })
+        try {
+            const res = await axios.post(route('billing.upgrade-subscription'), { plan: planKey })
+            if (res?.data?.url) {
+                window.location.href = res.data.url
+            } else {
+                router.reload()
+                setModal(null)
+            }
+        } catch {
+            alert('Something went wrong. Please try again.')
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     return (

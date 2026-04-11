@@ -261,7 +261,7 @@ public function success(Request $request)
             $user->plan = $plan;
             $user->save();
 
-            return back()->with('success', 'Plan upgraded successfully.');
+            return response()->json(['success' => true]);
         }
 
         // No existing subscription — start new checkout
