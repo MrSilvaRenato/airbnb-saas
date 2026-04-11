@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 
 function csrf() { return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') }
-function apiFetch(url, method = 'GET', data = null) {
-    const opts = {
-        method,
+function post(url, data = {}) {
+    return fetch(url, {
+        method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' },
-    }
-    if (data !== null) opts.body = JSON.stringify(data)
-    return fetch(url, opts).then(r => r.json())
+        body: JSON.stringify(data),
+    }).then(r => r.json())
 }
-const post = (url, data = {}) => apiFetch(url, 'POST', data)
-const del  = (url)           => apiFetch(url, 'DELETE')
+function del(url) {
+    return fetch(url, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' },
+    }).then(r => r.json())
+}
 
 function timeAgo(ts) {
     const d = Math.floor((Date.now() - new Date(ts + 'Z')) / 60000)
@@ -29,17 +33,16 @@ function GuestAvatar({ name, size = 'md' }) {
         </div>
     )
 }
-
 function AdminAvatar() {
     return (
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-xs shrink-0">H</div>
     )
 }
 
-const STATUS_TABS = [
-    { key: 'all',      label: 'All' },
-    { key: 'open',     label: 'Active' },
-    { key: 'closed',   label: 'Closed' },
+const TABS = [
+    { key: 'all', label: 'All' },
+    { key: 'open', label: 'Active' },
+    { key: 'closed', label: 'Closed' },
     { key: 'archived', label: 'Archived' },
 ]
 
@@ -53,7 +56,9 @@ export default function AdminChatDrawer() {
     const [tab, setTab]                 = useState('all')
     const [search, setSearch]           = useState('')
     const [hoverId, setHoverId]         = useState(null)
+    const [selected, setSelected]       = useState(new Set())
     const [confirmClear, setConfirmClear] = useState(false)
+    const [confirmBulk, setConfirmBulk]   = useState(null) // 'archive' | 'delete'
     const bottomRef = useRef(null)
     const pollRef   = useRef(null)
     const inputRef  = useRef(null)
@@ -69,18 +74,33 @@ export default function AdminChatDrawer() {
         }).catch(() => {})
     }
 
-    useEffect(() => {
-        load()
-        pollRef.current = setInterval(load, 3000)
-        return () => clearInterval(pollRef.current)
-    }, [])
+    useEffect(() => { load(); pollRef.current = setInterval(load, 3000); return () => clearInterval(pollRef.current) }, [])
+    useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [active?.messages])
 
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [active?.messages])
+    // Clear selection when tab changes
+    useEffect(() => setSelected(new Set()), [tab])
+
+    const filtered = convs.filter(c => {
+        const matchTab = tab === 'all' || c.status === tab
+        const matchSearch = !search || c.guest_name.toLowerCase().includes(search.toLowerCase()) || c.guest_email.toLowerCase().includes(search.toLowerCase())
+        return matchTab && matchSearch
+    })
+
+    const allSelected = filtered.length > 0 && filtered.every(c => selected.has(c.id))
+    const someSelected = selected.size > 0
+
+    function toggleSelect(id, e) {
+        e.stopPropagation()
+        setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+    }
+    function toggleAll() {
+        if (allSelected) setSelected(new Set())
+        else setSelected(new Set(filtered.map(c => c.id)))
+    }
 
     async function openConv(conv) {
         setActive(conv)
+        setSelected(new Set())
         await post(`/admin/chat/${conv.id}/read`).catch(() => {})
         load()
     }
@@ -91,54 +111,53 @@ export default function AdminChatDrawer() {
         setSending(true)
         const body = reply; setReply('')
         await post(`/admin/chat/${active.id}/reply`, { message: body }).catch(() => {})
-        setSending(false)
-        load()
+        setSending(false); load()
         setTimeout(() => inputRef.current?.focus(), 50)
     }
 
     async function closeConv() {
-        if (!active) return
         await post(`/admin/chat/${active.id}/close`).catch(() => {})
         setActive(null); load()
     }
 
     async function archiveConv(conv, e) {
-        e.stopPropagation()
+        e?.stopPropagation()
         await post(`/admin/chat/${conv.id}/archive`).catch(() => {})
         if (active?.id === conv.id) setActive(null)
         load()
     }
 
     async function deleteConv(conv, e) {
-        e.stopPropagation()
+        e?.stopPropagation()
         await del(`/admin/chat/${conv.id}`).catch(() => {})
         if (active?.id === conv.id) setActive(null)
         load()
     }
 
     async function doClear() {
-        const statuses = tab === 'all' ? 'all' : tab
-        await del(`/admin/chat?filter=${statuses}`).catch(() => {})
+        const filter = tab === 'open' ? 'closed' : tab  // don't clear open via this path
+        await post('/admin/chat/clear', { filter }).catch(() => {})
         setConfirmClear(false)
-        if (active && (tab === 'all' || active.status === tab)) setActive(null)
+        if (active) setActive(null)
         load()
     }
 
-    const filtered = convs.filter(c => {
-        const matchTab = tab === 'all' ? true : c.status === tab
-        const matchSearch = !search || c.guest_name.toLowerCase().includes(search.toLowerCase()) || c.guest_email.toLowerCase().includes(search.toLowerCase())
-        return matchTab && matchSearch
-    })
+    async function doBulk(action) {
+        const ids = [...selected]
+        await post('/admin/chat/bulk', { ids, action }).catch(() => {})
+        if (active && selected.has(active.id)) setActive(null)
+        setSelected(new Set())
+        setConfirmBulk(null)
+        load()
+    }
 
     const clearableCount = convs.filter(c => tab === 'all' ? ['closed','archived'].includes(c.status) : c.status === tab && c.status !== 'open').length
 
     return (
         <>
             {/* FAB */}
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-            >
+            <button onClick={() => setOpen(o => !o)}
+                className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
                 {open
                     ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     : <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -153,9 +172,9 @@ export default function AdminChatDrawer() {
             {/* Drawer */}
             {open && (
                 <div className="fixed bottom-24 right-5 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 flex overflow-hidden"
-                    style={{ width: active ? 520 : 320, height: 560, transition: 'width 0.2s ease' }}>
+                    style={{ width: active ? 520 : 320, height: 580, transition: 'width 0.2s ease' }}>
 
-                    {/* Left panel — inbox list */}
+                    {/* Left panel */}
                     <div className={`flex flex-col border-r border-gray-100 ${active ? 'w-52' : 'flex-1'} shrink-0`}>
 
                         {/* Header */}
@@ -163,7 +182,7 @@ export default function AdminChatDrawer() {
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-white font-semibold text-sm">Support Inbox</span>
                                 <div className="flex items-center gap-1.5">
-                                    {clearableCount > 0 && (
+                                    {clearableCount > 0 && !someSelected && (
                                         <button onClick={() => setConfirmClear(true)}
                                             className="text-white/60 hover:text-white text-[10px] border border-white/20 rounded-md px-1.5 py-0.5 transition">
                                             Clear {clearableCount}
@@ -174,10 +193,9 @@ export default function AdminChatDrawer() {
                                     </button>
                                 </div>
                             </div>
-
-                            {/* Filter tabs */}
+                            {/* Tabs */}
                             <div className="flex gap-0.5">
-                                {STATUS_TABS.map(t => {
+                                {TABS.map(t => {
                                     const count = t.key === 'all' ? convs.length : convs.filter(c => c.status === t.key).length
                                     return (
                                         <button key={t.key} onClick={() => setTab(t.key)}
@@ -189,23 +207,48 @@ export default function AdminChatDrawer() {
                             </div>
                         </div>
 
-                        {/* Search */}
-                        <div className="px-2 py-2 border-b border-gray-100 bg-white shrink-0">
+                        {/* Search + select-all row */}
+                        <div className="px-2 py-2 border-b border-gray-100 bg-white shrink-0 space-y-1.5">
                             <div className="relative">
                                 <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/></svg>
                                 <input
-                                    className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent text-gray-900 placeholder-gray-400"
+                                    className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-gray-900 placeholder-gray-400 focus:border-transparent transition"
                                     placeholder="Search name or email…"
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
                                 />
                             </div>
+
+                            {/* Select all + bulk actions */}
+                            {filtered.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <label className="flex items-center gap-1.5 cursor-pointer flex-1">
+                                        <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                                            className="w-3 h-3 rounded accent-indigo-600" />
+                                        <span className="text-[10px] text-gray-500">
+                                            {someSelected ? `${selected.size} selected` : 'Select all'}
+                                        </span>
+                                    </label>
+                                    {someSelected && (
+                                        <>
+                                            <button onClick={() => setConfirmBulk('archive')}
+                                                className="text-[10px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition">
+                                                Archive
+                                            </button>
+                                            <button onClick={() => setConfirmBulk('delete')}
+                                                className="text-[10px] px-2 py-0.5 rounded-md bg-red-50 text-red-500 hover:bg-red-100 border border-red-200 transition">
+                                                Delete
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* List */}
                         <div className="flex-1 overflow-y-auto bg-gray-50/50">
                             {filtered.length === 0 && (
-                                <div className="flex flex-col items-center justify-center h-full gap-2 py-8 px-4 text-center">
+                                <div className="flex items-center justify-center h-full">
                                     <p className="text-xs text-gray-400">{search ? 'No matches' : 'No conversations'}</p>
                                 </div>
                             )}
@@ -213,8 +256,9 @@ export default function AdminChatDrawer() {
                                 <div key={c.id}
                                     onMouseEnter={() => setHoverId(c.id)}
                                     onMouseLeave={() => setHoverId(null)}
-                                    className={`relative border-b border-gray-100 transition ${active?.id === c.id ? 'bg-white border-l-2 border-l-indigo-500' : 'hover:bg-white'}`}>
-                                    <button onClick={() => openConv(c)} className="w-full text-left px-3 py-2.5 pr-14">
+                                    className={`relative border-b border-gray-100 transition ${active?.id === c.id ? 'bg-white border-l-2 border-l-indigo-500' : selected.has(c.id) ? 'bg-indigo-50' : 'hover:bg-white'}`}>
+
+                                    <button onClick={() => openConv(c)} className="w-full text-left px-3 py-2.5 pl-8">
                                         <div className="flex items-center gap-1.5 mb-0.5">
                                             <GuestAvatar name={c.guest_name} size="sm" />
                                             <span className="text-xs font-semibold text-gray-900 truncate flex-1">{c.guest_name}</span>
@@ -231,18 +275,26 @@ export default function AdminChatDrawer() {
                                         </div>
                                     </button>
 
-                                    {/* Action buttons (visible on hover) */}
-                                    {hoverId === c.id && (
+                                    {/* Checkbox */}
+                                    <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                                        <input type="checkbox"
+                                            checked={selected.has(c.id)}
+                                            onChange={e => toggleSelect(c.id, e)}
+                                            onClick={e => e.stopPropagation()}
+                                            className="w-3 h-3 rounded accent-indigo-600 cursor-pointer"
+                                        />
+                                    </div>
+
+                                    {/* Per-row hover actions */}
+                                    {hoverId === c.id && !someSelected && (
                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                                             {c.status !== 'archived' && (
-                                                <button onClick={e => archiveConv(c, e)}
-                                                    title="Archive"
+                                                <button onClick={e => archiveConv(c, e)} title="Archive"
                                                     className="w-6 h-6 rounded-lg bg-amber-50 text-amber-500 hover:bg-amber-100 flex items-center justify-center transition">
                                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8"/></svg>
                                                 </button>
                                             )}
-                                            <button onClick={e => deleteConv(c, e)}
-                                                title="Delete"
+                                            <button onClick={e => deleteConv(c, e)} title="Delete"
                                                 className="w-6 h-6 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 flex items-center justify-center transition">
                                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M4 7h16"/></svg>
                                             </button>
@@ -254,9 +306,8 @@ export default function AdminChatDrawer() {
                     </div>
 
                     {/* Right panel — active thread */}
-                    {active ? (
+                    {active && (
                         <div className="flex-1 flex flex-col min-w-0">
-                            {/* Thread header */}
                             <div className="px-3 py-2.5 border-b border-gray-100 bg-white flex items-center gap-2 shrink-0">
                                 <button onClick={() => setActive(null)} className="text-gray-300 hover:text-gray-600 transition">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
@@ -270,26 +321,18 @@ export default function AdminChatDrawer() {
                                     {active.status === 'open' && (
                                         <>
                                             <button onClick={e => archiveConv(active, e)}
-                                                title="Archive"
-                                                className="text-[10px] text-amber-500 hover:text-amber-600 border border-amber-200 hover:border-amber-300 rounded-lg px-2 py-1 transition">
-                                                Archive
-                                            </button>
+                                                className="text-[10px] text-amber-500 hover:text-amber-600 border border-amber-200 rounded-lg px-2 py-1 transition">Archive</button>
                                             <button onClick={closeConv}
-                                                className="text-[10px] text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 rounded-lg px-2 py-1 transition">
-                                                End chat
-                                            </button>
+                                                className="text-[10px] text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 rounded-lg px-2 py-1 transition">End chat</button>
                                         </>
                                     )}
                                     {active.status !== 'open' && (
                                         <button onClick={e => deleteConv(active, e)}
-                                            className="text-[10px] text-red-400 hover:text-red-600 border border-red-100 hover:border-red-200 rounded-lg px-2 py-1 transition">
-                                            Delete
-                                        </button>
+                                            className="text-[10px] text-red-400 hover:text-red-600 border border-red-100 rounded-lg px-2 py-1 transition">Delete</button>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Messages */}
                             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-gray-50/50">
                                 {active.messages?.map((m, i) => {
                                     const isAdmin = m.sender === 'admin'
@@ -305,9 +348,7 @@ export default function AdminChatDrawer() {
                                                     isAdmin
                                                         ? 'bg-indigo-600 text-white rounded-tr-sm'
                                                         : 'bg-white text-gray-900 rounded-tl-sm shadow-sm border border-gray-100'
-                                                }`}>
-                                                    {m.body}
-                                                </div>
+                                                }`}>{m.body}</div>
                                                 <span className="text-[10px] text-gray-400 px-1">{timeAgo(m.created_at)}</span>
                                             </div>
                                         </div>
@@ -319,11 +360,9 @@ export default function AdminChatDrawer() {
                                 <div ref={bottomRef} />
                             </div>
 
-                            {/* Reply */}
                             {active.status === 'open' ? (
                                 <form onSubmit={sendReply} className="border-t border-gray-100 bg-white px-3 py-3 flex items-center gap-2 shrink-0">
-                                    <input
-                                        ref={inputRef}
+                                    <input ref={inputRef}
                                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
                                         placeholder="Reply to guest…"
                                         value={reply}
@@ -343,7 +382,7 @@ export default function AdminChatDrawer() {
                                 </div>
                             )}
                         </div>
-                    ) : null}
+                    )}
                 </div>
             )}
 
@@ -352,12 +391,31 @@ export default function AdminChatDrawer() {
                 <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-xl">
                         <div className="text-sm font-semibold text-gray-900 mb-1">Clear {clearableCount} conversation{clearableCount !== 1 ? 's' : ''}?</div>
-                        <p className="text-xs text-gray-500 mb-4">
-                            This will permanently delete all {tab === 'all' ? 'closed & archived' : tab} conversations and their messages.
-                        </p>
+                        <p className="text-xs text-gray-500 mb-4">Permanently deletes all {tab === 'all' ? 'closed & archived' : tab} conversations and their messages.</p>
                         <div className="flex gap-2 justify-end">
                             <button onClick={() => setConfirmClear(false)} className="px-3 py-1.5 rounded-lg border text-xs hover:bg-gray-50 transition">Cancel</button>
                             <button onClick={doClear} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition">Delete all</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm bulk action modal */}
+            {confirmBulk && (
+                <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-xl">
+                        <div className="text-sm font-semibold text-gray-900 mb-1">
+                            {confirmBulk === 'archive' ? 'Archive' : 'Delete'} {selected.size} conversation{selected.size !== 1 ? 's' : ''}?
+                        </div>
+                        <p className="text-xs text-gray-500 mb-4">
+                            {confirmBulk === 'delete' ? 'This permanently removes the selected conversations and all their messages.' : 'Selected conversations will be moved to Archived.'}
+                        </p>
+                        <div className="flex gap-2 justify-end">
+                            <button onClick={() => setConfirmBulk(null)} className="px-3 py-1.5 rounded-lg border text-xs hover:bg-gray-50 transition">Cancel</button>
+                            <button onClick={() => doBulk(confirmBulk)}
+                                className={`px-3 py-1.5 rounded-lg text-white text-xs font-medium transition ${confirmBulk === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}>
+                                {confirmBulk === 'archive' ? 'Archive all' : 'Delete all'}
+                            </button>
                         </div>
                     </div>
                 </div>
