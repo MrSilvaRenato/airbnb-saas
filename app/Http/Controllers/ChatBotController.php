@@ -31,6 +31,7 @@ class ChatBotController extends Controller
         $conv = DB::table('chat_conversations')->insertGetId([
             'guest_name'      => $request->name,
             'guest_email'     => $request->email,
+            'plan'            => $request->input('plan', 'guest'),
             'status'          => 'open',
             'last_message_at' => now(),
             'created_at'      => now(),
@@ -83,6 +84,7 @@ class ChatBotController extends Controller
                 'id'          => $c->id,
                 'guest_name'  => $c->guest_name,
                 'guest_email' => $c->guest_email,
+                'plan'        => $c->plan ?? 'guest',
                 'status'      => $c->status,
                 'unread'      => $unread,
                 'last_message'=> $last?->body,

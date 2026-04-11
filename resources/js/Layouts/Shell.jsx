@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, usePage, router } from '@inertiajs/react'
 import Toast from '@/Components/Toast'
+import ChatWidget from '@/Components/ChatWidget'
 
 function NavLink({ href, children }) {
   const isActive = route().current(href.replace(/^\//,'') + '*') || route().current(href)
@@ -165,6 +166,7 @@ export default function Shell({ title, children, right = null }) {
       )}
 
       <Toast />
+      <ChatWidget authUser={user} />
     </div>
   )
 }
