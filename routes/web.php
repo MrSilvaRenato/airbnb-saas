@@ -39,7 +39,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/chat/{conversation}/read', [ChatBotController::class, 'markRead']);
     Route::post('/admin/chat/{conversation}/archive', [ChatBotController::class, 'archiveConversation']);
     Route::delete('/admin/chat/{conversation}', [ChatBotController::class, 'deleteConversation']);
-    Route::delete('/admin/chat', [ChatBotController::class, 'clearConversations']);
+    Route::post('/admin/chat/clear', [ChatBotController::class, 'clearConversations']);
+    Route::post('/admin/chat/bulk', [ChatBotController::class, 'bulkAction']);
 });
 
 /*

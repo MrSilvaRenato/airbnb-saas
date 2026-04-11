@@ -134,11 +134,24 @@ class ChatBotController extends Controller
 
     public function clearConversations(Request $request)
     {
-        $filter = $request->query('filter', 'closed');
+        $filter = $request->input('filter', 'closed');
         $statuses = $filter === 'all' ? ['closed', 'archived'] : [$filter];
         $ids = DB::table('chat_conversations')->whereIn('status', $statuses)->pluck('id');
         DB::table('chat_messages')->whereIn('conversation_id', $ids)->delete();
         DB::table('chat_conversations')->whereIn('id', $ids)->delete();
         return response()->json(['ok' => true, 'deleted' => $ids->count()]);
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'action' => 'required|in:archive,delete']);
+        $ids = $request->ids;
+        if ($request->action === 'archive') {
+            DB::table('chat_conversations')->whereIn('id', $ids)->update(['status' => 'archived', 'updated_at' => now()]);
+        } else {
+            DB::table('chat_messages')->whereIn('conversation_id', $ids)->delete();
+            DB::table('chat_conversations')->whereIn('id', $ids)->delete();
+        }
+        return response()->json(['ok' => true]);
     }
 }
