@@ -24,8 +24,8 @@ export default function AdminDashboard() {
     const [planFilter, setPlanFilter] = React.useState("");
     const [sort, setSort] = React.useState("newest");
     const [confirmDelete, setConfirmDelete] = React.useState(null);
-    const [chatAvailable, setChatAvailable] = useState(false);
-    const [chatLoading, setChatLoading] = useState(false);  
+    const [chatAvailable, setChatAvailable] = React.useState(false);
+    const [chatLoading, setChatLoading] = React.useState(false); 
 
 
     useEffect(() => {
@@ -74,30 +74,36 @@ const filtered = React.useMemo(() => {
 };
 
 
-const toggleChatAvailability = async () => {
+
+
+React.useEffect(() => {
+    fetch('/chat-status', {
+        headers: { Accept: 'application/json' },
+    })
+        .then(res => res.json())
+        .then(data => setChatAvailable(!!data.available))
+        .catch(() => setChatAvailable(false));
+}, []);
+
+const toggleChatAvailability = () => {
     setChatLoading(true);
 
-    try {
-        const token = document
-            .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content');
-
-        const res = await fetch('/admin/toggle-chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token,
-                'Accept': 'application/json',
-            },
-        });
-
-        const data = await res.json();
-        setChatAvailable(!!data.available);
-    } catch (error) {
-        console.error('Toggle chat failed:', error);
-    } finally {
-        setChatLoading(false);
-    }
+    router.post('/admin/toggle-chat', {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            fetch('/chat-status', {
+                headers: { Accept: 'application/json' },
+            })
+                .then(res => res.json())
+                .then(data => setChatAvailable(!!data.available))
+                .catch(() => setChatAvailable(false))
+                .finally(() => setChatLoading(false));
+        },
+        onError: (errors) => {
+            console.error('Toggle chat failed:', errors);
+            setChatLoading(false);
+        },
+    });
 };
 
     return (
@@ -291,11 +297,7 @@ const toggleChatAvailability = async () => {
         disabled={chatLoading}
         className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
     >
-        {chatLoading
-            ? "Updating..."
-            : chatAvailable
-            ? "Set Offline"
-            : "Go Live"}
+        {chatLoading ? "Updating..." : chatAvailable ? "Set Offline" : "Go Live"}
     </button>
 </div>
             {/* Delete confirm modal */}
