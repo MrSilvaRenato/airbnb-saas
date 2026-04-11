@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import axios from 'axios'
+
+function csrf() { return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') }
+function post(url, data) {
+    return fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' },
+        body: JSON.stringify(data),
+    }).then(r => r.json())
+}
 
 
 function timeAgo(ts) {
@@ -48,7 +57,7 @@ export default function ChatWidget() {
         e.preventDefault()
         setSending(true); setError('')
         try {
-            const res = await axios.post('/chat/start', { name, email, message: firstMsg })
+            const res = await post('/chat/start', { name, email, message: firstMsg })
             setConvId(res.data.conversation_id)
             setMessages([{ id: 1, sender: 'guest', body: firstMsg, created_at: new Date().toISOString() }])
             setPhase('chat')
@@ -62,7 +71,7 @@ export default function ChatWidget() {
         setSending(true)
         const body = reply; setReply('')
         try {
-            await axios.post(`/chat/${convId}/message`, { message: body })
+            await post(`/chat/${convId}/message`, { message: body })
             setMessages(m => [...m, { id: Date.now(), sender: 'guest', body, created_at: new Date().toISOString() }])
         } catch { setError('Failed to send.') }
         setSending(false)
