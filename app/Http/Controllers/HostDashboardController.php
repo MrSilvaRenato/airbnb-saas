@@ -125,7 +125,19 @@ if ($a->action !== 'deleted') {
             'stayLimit'         => $stayLimit,
         ],
         'recentlyUpgraded' => $request->boolean('upgraded', false),
-        'activities'       => $activities,   // 👈 now present
+        'activities'       => $activities,
+        'stays'            => \App\Models\WelcomePackage::whereIn('property_id', $allProps->pluck('id'))
+            ->where('check_out_date', '>=', now()->toDateString())
+            ->orderBy('check_in_date')
+            ->limit(10)
+            ->get(['id','property_id','guest_first_name','check_in_date','check_out_date'])
+            ->map(fn($s) => [
+                'id'               => $s->id,
+                'guest_first_name' => $s->guest_first_name,
+                'check_in_date'    => $s->check_in_date,
+                'check_out_date'   => $s->check_out_date,
+                'property_title'   => $allProps->firstWhere('id', $s->property_id)?->title ?? '',
+            ]),
         'onboarding' => [
             'step'    => $user->onboarding_step ?? 0,
             'skipped' => (bool) $user->onboarding_skipped_at,
