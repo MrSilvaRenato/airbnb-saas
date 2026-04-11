@@ -153,6 +153,7 @@ public function success(Request $request)
             'planRenewsAt'        => $user->plan_renews_at?->toDateString(),
             'planEndsAt'          => $user->plan_ends_at?->toDateString(),
             'hasStripeCustomer'   => (bool) $user->stripe_customer_id,
+            'hasStripeSubscription' => (bool) $user->stripe_subscription_id,
             'canRequestRefund'    => $canRequestRefund,
             'pendingRefund'       => $pendingRefund,
             'daysSubscribed'      => $daysSubscribed,

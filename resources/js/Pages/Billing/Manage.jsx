@@ -22,7 +22,7 @@ function Modal({ title, children, onClose }) {
     )
 }
 
-export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, hasStripeCustomer, canRequestRefund, pendingRefund, daysSubscribed, checkoutRoute, portalRoute }) {
+export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, hasStripeCustomer, hasStripeSubscription, canRequestRefund, pendingRefund, daysSubscribed, checkoutRoute, portalRoute }) {
     const { flash = {} } = usePage().props
     const meta = PLAN[plan] ?? PLAN.free
     const isPaid = plan === 'host' || plan === 'pro'
@@ -129,7 +129,7 @@ export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, h
                     )}
 
                     {/* Cancel subscription */}
-                    {isPaid && !isCancelling && (
+                    {isPaid && !isCancelling && hasStripeSubscription && (
                         <div className="p-5 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-sm font-semibold text-gray-900">Cancel subscription</div>
@@ -143,7 +143,7 @@ export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, h
                     )}
 
                     {/* Refund request */}
-                    {isPaid && (
+                    {isPaid && hasStripeSubscription && (
                         <div className="p-5 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-sm font-semibold text-gray-900">Request a refund</div>
