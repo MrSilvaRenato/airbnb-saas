@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PackageVisit;
+use App\Models\Property;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -32,7 +34,7 @@ public function share(Request $request): array
     return array_merge(parent::share($request), [
         'auth' => [
             'user' => $request->user()
-                ? $request->user()->only('id','name','email','role','plan')
+                ? $request->user()->only('id','name','email','role','plan','notify_on_guest_view')
                 : null,
         ],
         'flash' => [
@@ -40,6 +42,14 @@ public function share(Request $request): array
             'error'   => fn() => $request->session()->get('error'),
         ],
         'impersonating' => session()->has('impersonating_as'),
+        'unreadVisits'  => function () use ($request) {
+            if (!$request->user()) return 0;
+            $propertyIds = Property::where('user_id', $request->user()->id)->pluck('id');
+            if ($propertyIds->isEmpty()) return 0;
+            return PackageVisit::whereHas('welcomePackage', fn($q) => $q->whereIn('property_id', $propertyIds))
+                ->where('visited_at', '>=', now()->subHours(24))
+                ->count();
+        },
     ]);
 }
 }
