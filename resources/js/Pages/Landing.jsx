@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Head, useForm } from "@inertiajs/react";
+import ChatWidget from "@/Components/ChatWidget";
 
 /* ── AUTH MODAL (unchanged logic) ─────────────────────────────── */
 function AuthModal({ mode, setMode, loginForm, registerForm, submitLogin, submitRegister }) {
@@ -306,7 +307,9 @@ export default function Landing() {
           <button onClick={() => setMode('register')} className="px-10 py-4 bg-white text-indigo-700 rounded-xl font-bold text-base hover:bg-indigo-50 transition-all shadow-xl">
             Start for free — no card needed
           </button>
+          <ChatWidget />
         </div>
+        
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────── */}
