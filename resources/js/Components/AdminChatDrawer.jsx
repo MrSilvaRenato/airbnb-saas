@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
-const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+axios.defaults.withCredentials = true
 
 function timeAgo(ts) {
-    const d = Math.floor((Date.now() - new Date(ts)) / 60000)
+    const d = Math.floor((Date.now() - new Date(ts + 'Z')) / 60000)
     if (d < 1) return 'just now'
     if (d < 60) return `${d}m ago`
     return `${Math.floor(d / 60)}h ago`
@@ -43,7 +44,7 @@ export default function AdminChatDrawer() {
 
     async function openConv(conv) {
         setActive(conv)
-        await axios.post(`/admin/chat/${conv.id}/read`, {}, { headers: { 'X-CSRF-TOKEN': CSRF() } }).catch(() => {})
+        await axios.post(`/admin/chat/${conv.id}/read`, {}).catch(() => {})
         load()
     }
 
@@ -52,14 +53,14 @@ export default function AdminChatDrawer() {
         if (!reply.trim() || !active) return
         setSending(true)
         const body = reply; setReply('')
-        await axios.post(`/admin/chat/${active.id}/reply`, { message: body }, { headers: { 'X-CSRF-TOKEN': CSRF() } }).catch(() => {})
+        await axios.post(`/admin/chat/${active.id}/reply`, { message: body }).catch(() => {})
         setSending(false)
         load()
     }
 
     async function closeConv() {
         if (!active) return
-        await axios.post(`/admin/chat/${active.id}/close`, {}, { headers: { 'X-CSRF-TOKEN': CSRF() } }).catch(() => {})
+        await axios.post(`/admin/chat/${active.id}/close`, {}).catch(() => {})
         setActive(null)
         load()
     }

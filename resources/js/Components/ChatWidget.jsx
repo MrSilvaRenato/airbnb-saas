@@ -5,7 +5,7 @@ axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[nam
 axios.defaults.withCredentials = true
 
 function timeAgo(ts) {
-    const d = Math.floor((Date.now() - new Date(ts)) / 60000)
+    const d = Math.floor((Date.now() - new Date(ts + 'Z')) / 60000)
     if (d < 1) return 'just now'
     if (d < 60) return `${d}m ago`
     return `${Math.floor(d / 60)}h ago`
