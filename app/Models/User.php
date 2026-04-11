@@ -26,6 +26,12 @@ class User extends Authenticatable
         'onboarding_step',
         'onboarding_skipped_at',
         'notify_on_guest_view',
+        'stripe_customer_id',
+        'stripe_subscription_id',
+        'stripe_status',
+        'plan_renews_at',
+        'plan_ends_at',
+        'subscription_started_at',
     ];
 
     /**
@@ -49,7 +55,10 @@ class User extends Authenticatable
             'email_verified_at'      => 'datetime',
             'password'               => 'hashed',
             'onboarding_skipped_at'  => 'datetime',
-            'notify_on_guest_view'   => 'boolean',
+            'notify_on_guest_view'    => 'boolean',
+            'plan_renews_at'          => 'datetime',
+            'plan_ends_at'            => 'datetime',
+            'subscription_started_at' => 'datetime',
         ];
     }
 

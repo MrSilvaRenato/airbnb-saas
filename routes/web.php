@@ -41,6 +41,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/users/{user}', [DashboardController::class, 'destroy'])->name('admin.users.destroy');
 
     Route::post('/users/{user}/impersonate', [DashboardController::class, 'impersonate'])->name('admin.users.impersonate');
+
+    Route::get('/refund-requests', [DashboardController::class, 'refundRequests'])->name('admin.refunds');
+    Route::post('/refund-requests/{refund}/approve', [DashboardController::class, 'approveRefund'])->name('admin.refunds.approve');
+    Route::post('/refund-requests/{refund}/deny', [DashboardController::class, 'denyRefund'])->name('admin.refunds.deny');
 });
 
 
@@ -224,6 +228,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/billing/portal', [BillingController::class, 'portal'])
         ->name('billing.portal');
+
+    Route::post('/billing/cancel-subscription', [BillingController::class, 'cancelSubscription'])
+        ->name('billing.cancel-subscription');
+
+    Route::post('/billing/refund-request', [BillingController::class, 'refundRequest'])
+        ->name('billing.refund-request');
+
+    Route::post('/billing/upgrade-subscription', [BillingController::class, 'upgradeSubscription'])
+        ->name('billing.upgrade-subscription');
 });
 
 // STRIPE WEBHOOK (public)

@@ -8,6 +8,8 @@ use Inertia\Inertia;
 use Stripe\Stripe;
 use Stripe\Customer;
 use Stripe\Checkout\Session;
+use App\Models\RefundRequest;
+use Carbon\Carbon;
 
 class BillingController extends Controller
 {
@@ -133,11 +135,149 @@ public function success(Request $request)
     {
         $user = $request->user();
 
+        $pendingRefund = RefundRequest::where('user_id', $user->id)
+            ->where('status', 'pending')->exists();
+
+        $daysSubscribed = $user->subscription_started_at
+            ? Carbon::parse($user->subscription_started_at)->diffInDays(now())
+            : null;
+
+        $canRequestRefund = $user->stripe_subscription_id
+            && !$pendingRefund
+            && $daysSubscribed !== null
+            && $daysSubscribed <= 7;
+
         return \Inertia\Inertia::render('Billing/Manage', [
-            'plan'              => $user->plan ?? 'free',
-            'hasStripeCustomer' => (bool) $user->stripe_customer_id,
-            'checkoutRoute'     => route('billing.checkout'),
-            'portalRoute'       => route('billing.portal'),
+            'plan'                => $user->plan ?? 'free',
+            'stripeStatus'        => $user->stripe_status,
+            'planRenewsAt'        => $user->plan_renews_at?->toDateString(),
+            'planEndsAt'          => $user->plan_ends_at?->toDateString(),
+            'hasStripeCustomer'   => (bool) $user->stripe_customer_id,
+            'canRequestRefund'    => $canRequestRefund,
+            'pendingRefund'       => $pendingRefund,
+            'daysSubscribed'      => $daysSubscribed,
+            'checkoutRoute'       => route('billing.checkout'),
+            'portalRoute'         => route('billing.portal'),
         ]);
+    }
+
+    /**
+     * POST /billing/cancel
+     * Cancels at period end — user keeps access until plan_ends_at.
+     */
+    public function cancelSubscription(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->stripe_subscription_id) {
+            return back()->with('error', 'No active subscription found.');
+        }
+
+        \Stripe\Stripe::setApiKey(config('stripe.secret'));
+
+        \Stripe\Subscription::update($user->stripe_subscription_id, [
+            'cancel_at_period_end' => true,
+        ]);
+
+        // plan_ends_at will be confirmed by webhook, but set optimistically
+        if ($user->plan_renews_at) {
+            $user->plan_ends_at = $user->plan_renews_at;
+            $user->save();
+        }
+
+        return back()->with('success', 'Subscription cancelled. You keep access until the end of your billing period.');
+    }
+
+    /**
+     * POST /billing/refund-request
+     * Submit a refund request — admin must approve.
+     */
+    public function refundRequest(Request $request)
+    {
+        $request->validate(['reason' => 'required|string|min:10|max:1000']);
+
+        $user = $request->user();
+
+        if (!$user->stripe_subscription_id) {
+            return back()->with('error', 'No active subscription found.');
+        }
+
+        $existing = RefundRequest::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])->exists();
+
+        if ($existing) {
+            return back()->with('error', 'You already have a refund request in progress.');
+        }
+
+        $daysSubscribed = $user->subscription_started_at
+            ? Carbon::parse($user->subscription_started_at)->diffInDays(now())
+            : 999;
+
+        if ($daysSubscribed > 7) {
+            return back()->with('error', 'Refund requests are only accepted within 7 days of subscribing.');
+        }
+
+        RefundRequest::create([
+            'user_id'                => $user->id,
+            'plan'                   => $user->plan,
+            'amount'                 => match($user->plan) { 'pro' => 49, 'host' => 19, default => 0 },
+            'reason'                 => $request->reason,
+            'status'                 => 'pending',
+            'subscription_started_at' => $user->subscription_started_at,
+        ]);
+
+        return back()->with('success', 'Refund request submitted. Our team will review and respond within 1–2 business days.');
+    }
+
+    /**
+     * POST /billing/upgrade-subscription
+     * Upgrades an existing Stripe subscription to a new price (with proration).
+     */
+    public function upgradeSubscription(Request $request)
+    {
+        $request->validate(['plan' => 'required|in:host,pro']);
+
+        $user = $request->user();
+        $plan = $request->plan;
+
+        $priceId = $plan === 'pro'
+            ? config('stripe.price_pro')
+            : config('stripe.price_host');
+
+        \Stripe\Stripe::setApiKey(config('stripe.secret'));
+
+        // If existing subscription, update it (proration)
+        if ($user->stripe_subscription_id) {
+            $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+            \Stripe\Subscription::update($user->stripe_subscription_id, [
+                'items' => [[
+                    'id'    => $subscription->items->data[0]->id,
+                    'price' => $priceId,
+                ]],
+                'proration_behavior' => 'create_prorations',
+            ]);
+
+            $user->plan = $plan;
+            $user->save();
+
+            return back()->with('success', 'Plan upgraded successfully.');
+        }
+
+        // No existing subscription — start new checkout
+        if (!$user->stripe_customer_id) {
+            $customer = Customer::create(['email' => $user->email, 'name' => $user->name ?? 'Host']);
+            $user->stripe_customer_id = $customer->id;
+            $user->save();
+        }
+
+        $session = Session::create([
+            'mode'       => 'subscription',
+            'customer'   => $user->stripe_customer_id,
+            'line_items' => [['price' => $priceId, 'quantity' => 1]],
+            'success_url' => route('host.dashboard', ['upgraded' => 1]),
+            'cancel_url'  => route('billing.manage'),
+        ]);
+
+        return response()->json(['url' => $session->url]);
     }
 }

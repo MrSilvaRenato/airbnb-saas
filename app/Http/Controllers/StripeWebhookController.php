@@ -145,17 +145,28 @@ class StripeWebhookController extends Controller
             default                                  => ‘host’, // fallback for legacy price_id
         };
 
+        $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
+
         if (in_array($status, [‘active’, ‘trialing’, ‘past_due’])) {
-            $user->plan                    = $planValue;
-            $user->stripe_status           = $status;
-            $user->stripe_subscription_id  = $subscription->id;
-            $user->plan_renews_at          = $renewsAt;
+            $user->plan                   = $planValue;
+            $user->stripe_status          = $status;
+            $user->stripe_subscription_id = $subscription->id;
+            $user->plan_renews_at         = $renewsAt;
+            $user->plan_ends_at           = $cancelAtPeriodEnd ? $renewsAt : null;
+
+            // Record subscription start date once
+            if (!$user->subscription_started_at) {
+                $startedAt = !empty($subscription->start_date)
+                    ? Carbon::createFromTimestamp($subscription->start_date)
+                    : now();
+                $user->subscription_started_at = $startedAt;
+            }
         } else {
-            // failed / canceled / incomplete => downgrade
-            $user->plan                    = ‘free’;
-            $user->stripe_status           = $status;
-            $user->stripe_subscription_id  = $subscription->id;
-            $user->plan_renews_at          = $renewsAt;
+            $user->plan                   = ‘free’;
+            $user->stripe_status          = $status;
+            $user->stripe_subscription_id = $subscription->id;
+            $user->plan_renews_at         = null;
+            $user->plan_ends_at           = null;
         }
 
         $user->save();
