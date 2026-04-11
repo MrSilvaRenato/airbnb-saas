@@ -22,7 +22,7 @@ use App\Http\Middleware\EnsureHost;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ChatBotController;
-
+use App\Http\Controllers\PushSubscriptionController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -42,6 +42,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/chat/clear', [ChatBotController::class, 'clearConversations']);
     Route::post('/admin/chat/bulk', [ChatBotController::class, 'bulkAction']);
 });
+
+// Push Browser notifications for LiveChat to Admin
+Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('auth');
 
 /*
 |--------------------------------------------------------------------------
