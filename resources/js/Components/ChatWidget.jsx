@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
-const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+axios.defaults.withCredentials = true
 
 function timeAgo(ts) {
     const d = Math.floor((Date.now() - new Date(ts)) / 60000)
@@ -49,7 +50,7 @@ export default function ChatWidget() {
         e.preventDefault()
         setSending(true); setError('')
         try {
-            const res = await axios.post('/chat/start', { name, email, message: firstMsg }, { headers: { 'X-CSRF-TOKEN': CSRF() } })
+            const res = await axios.post('/chat/start', { name, email, message: firstMsg })
             setConvId(res.data.conversation_id)
             setMessages([{ id: 1, sender: 'guest', body: firstMsg, created_at: new Date().toISOString() }])
             setPhase('chat')
@@ -63,7 +64,7 @@ export default function ChatWidget() {
         setSending(true)
         const body = reply; setReply('')
         try {
-            await axios.post(`/chat/${convId}/message`, { message: body }, { headers: { 'X-CSRF-TOKEN': CSRF() } })
+            await axios.post(`/chat/${convId}/message`, { message: body })
             setMessages(m => [...m, { id: Date.now(), sender: 'guest', body, created_at: new Date().toISOString() }])
         } catch { setError('Failed to send.') }
         setSending(false)
@@ -108,9 +109,9 @@ export default function ChatWidget() {
                         {available && phase === 'form' && (
                             <form onSubmit={startChat} className="space-y-3">
                                 <div className="text-sm text-gray-600 bg-indigo-50 rounded-xl p-3">👋 Hi! How can we help you today?</div>
-                                <input required className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
-                                <input required type="email" className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Your email" value={email} onChange={e => setEmail(e.target.value)} />
-                                <textarea required rows={3} className="w-full border rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Type your message…" value={firstMsg} onChange={e => setFirstMsg(e.target.value)} />
+                                <input required className="w-full border rounded-xl px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
+                                <input required type="email" className="w-full border rounded-xl px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Your email" value={email} onChange={e => setEmail(e.target.value)} />
+                                <textarea required rows={3} className="w-full border rounded-xl px-3 py-2 text-sm text-gray-900 bg-white resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Type your message…" value={firstMsg} onChange={e => setFirstMsg(e.target.value)} />
                                 {error && <p className="text-xs text-red-500">{error}</p>}
                                 <button type="submit" disabled={sending} className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition">
                                     {sending ? 'Starting…' : 'Start chat'}
@@ -135,7 +136,7 @@ export default function ChatWidget() {
 
                     {phase === 'chat' && (
                         <form onSubmit={sendReply} className="border-t p-3 flex gap-2">
-                            <input className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Type a message…" value={reply} onChange={e => setReply(e.target.value)} />
+                            <input className="flex-1 border rounded-xl px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Type a message…" value={reply} onChange={e => setReply(e.target.value)} />
                             <button type="submit" disabled={sending || !reply.trim()} className="px-3 py-2 rounded-xl bg-indigo-600 text-white disabled:opacity-40 hover:bg-indigo-700 transition">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                             </button>
