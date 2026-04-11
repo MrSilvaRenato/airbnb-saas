@@ -18,10 +18,7 @@ class ChatBotController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'available' => true,
-            ]);
+            return back();
         }
 
         $newStatus = !$setting->chat_available;
@@ -33,10 +30,7 @@ class ChatBotController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return response()->json([
-            'success' => true,
-            'available' => (bool) $newStatus,
-        ]);
+        return back();
     }
 
     public function chatStatus()
