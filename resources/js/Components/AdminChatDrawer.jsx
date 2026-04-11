@@ -17,6 +17,51 @@ function del(url) {
     }).then(r => r.json())
 }
 
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+
+    const rawData = window.atob(base64)
+    return new Uint8Array([...rawData].map(char => char.charCodeAt(0)))
+}
+
+async function enablePushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        alert('Push notifications are not supported on this browser.')
+        return
+    }
+
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return
+
+    const registration = await navigator.serviceWorker.register('/sw.js')
+    const ready = await navigator.serviceWorker.ready
+
+    let subscription = await ready.pushManager.getSubscription()
+
+    if (!subscription) {
+        subscription = await ready.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
+        })
+    }
+
+    await fetch('/push/subscribe', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrf(),
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify(subscription.toJSON()),
+    })
+
+    alert('Push notifications enabled')
+}
+
 function timeAgo(ts) {
     const d = Math.floor((Date.now() - new Date(ts + 'Z')) / 60000)
     if (d < 1) return 'just now'
@@ -59,6 +104,7 @@ export default function AdminChatDrawer() {
     const [selected, setSelected]       = useState(new Set())
     const [confirmClear, setConfirmClear] = useState(false)
     const [confirmBulk, setConfirmBulk]   = useState(null) // 'archive' | 'delete'
+    const [pushLoading, setPushLoading] = useState(false)
     const bottomRef = useRef(null)
     const pollRef   = useRef(null)
     const inputRef  = useRef(null)
@@ -114,6 +160,18 @@ export default function AdminChatDrawer() {
         setSending(false); load()
         setTimeout(() => inputRef.current?.focus(), 50)
     }
+
+    async function handleEnablePush() {
+    try {
+        setPushLoading(true)
+        await enablePushNotifications()
+    } catch (e) {
+        console.error('Push setup failed', e)
+        alert('Could not enable push notifications.')
+    } finally {
+        setPushLoading(false)
+    }
+}
 
     async function closeConv() {
         await post(`/admin/chat/${active.id}/close`).catch(() => {})
@@ -181,17 +239,29 @@ export default function AdminChatDrawer() {
                         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-3 pt-3 pb-0 shrink-0">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-white font-semibold text-sm">Support Inbox</span>
-                                <div className="flex items-center gap-1.5">
-                                    {clearableCount > 0 && !someSelected && (
-                                        <button onClick={() => setConfirmClear(true)}
-                                            className="text-white/60 hover:text-white text-[10px] border border-white/20 rounded-md px-1.5 py-0.5 transition">
-                                            Clear {clearableCount}
-                                        </button>
-                                    )}
-                                    <button onClick={() => setOpen(false)} className="text-white/60 hover:text-white transition">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
-                                </div>
+                             <div className="flex items-center gap-1.5">
+    <button
+        onClick={handleEnablePush}
+        disabled={pushLoading}
+        className="text-white/80 hover:text-white text-[10px] border border-white/20 rounded-md px-1.5 py-0.5 transition disabled:opacity-50"
+        title="Enable push notifications on this device"
+    >
+        {pushLoading ? 'Enabling…' : 'Enable Push'}
+    </button>
+
+    {clearableCount > 0 && !someSelected && (
+        <button onClick={() => setConfirmClear(true)}
+            className="text-white/60 hover:text-white text-[10px] border border-white/20 rounded-md px-1.5 py-0.5 transition">
+            Clear {clearableCount}
+        </button>
+    )}
+
+    <button onClick={() => setOpen(false)} className="text-white/60 hover:text-white transition">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </button>
+</div>
                             </div>
                             {/* Tabs */}
                             <div className="flex gap-0.5">
