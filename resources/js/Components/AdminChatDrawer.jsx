@@ -68,16 +68,24 @@ async function enablePushNotifications() {
         })
     }
 
-    await fetch('/push/subscribe', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrf(),
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify(subscription.toJSON()),
-    })
+const contentEncoding =
+    PushManager.supportedContentEncodings?.includes('aes128gcm')
+        ? 'aes128gcm'
+        : 'aesgcm';
+        
+await fetch('/push/subscribe', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrf(),
+        'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+        ...subscription.toJSON(),
+        contentEncoding,
+    }),
+})
 
     alert('Push notifications enabled')
 }
