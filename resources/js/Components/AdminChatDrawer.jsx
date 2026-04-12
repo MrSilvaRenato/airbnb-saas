@@ -33,6 +33,26 @@ async function enablePushNotifications() {
         return
     }
 
+    async function testLocalNotification() {
+    try {
+        const registration = await navigator.serviceWorker.ready
+
+        await registration.showNotification('Local test notification', {
+            body: 'If you see this, the browser + service worker can display notifications.',
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            data: {
+                url: '/admin/dashboard',
+            },
+        })
+
+        alert('Local notification triggered')
+    } catch (e) {
+        console.error('Local notification failed', e)
+        alert('Local notification failed')
+    }
+}
+
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return
 
@@ -248,6 +268,14 @@ export default function AdminChatDrawer() {
     >
         {pushLoading ? 'Enabling…' : 'Enable Push'}
     </button>
+
+    <button
+    onClick={testLocalNotification}
+    className="text-white/80 hover:text-white text-[10px] border border-white/20 rounded-md px-1.5 py-0.5 transition"
+    title="Test local notification"
+>
+    Test Push
+</button>
 
     {clearableCount > 0 && !someSelected && (
         <button onClick={() => setConfirmClear(true)}
