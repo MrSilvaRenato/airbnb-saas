@@ -27,6 +27,51 @@ function urlBase64ToUint8Array(base64String) {
     return new Uint8Array([...rawData].map(char => char.charCodeAt(0)))
 }
 
+async function autoRegisterPush() {
+    try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+            return
+        }
+
+        if (Notification.permission !== 'granted') {
+            return
+        }
+
+        await navigator.serviceWorker.register('/sw.js')
+        const ready = await navigator.serviceWorker.ready
+
+        let subscription = await ready.pushManager.getSubscription()
+
+        if (!subscription) {
+            subscription = await ready.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
+            })
+        }
+
+        const contentEncoding =
+            PushManager.supportedContentEncodings?.includes('aes128gcm')
+                ? 'aes128gcm'
+                : 'aesgcm'
+
+        await fetch('/push/subscribe', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf(),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                ...subscription.toJSON(),
+                contentEncoding,
+            }),
+        })
+    } catch (e) {
+        console.error('Auto push registration failed', e)
+    }
+}
+
 async function testLocalNotification() {
     try {
         const registration = await navigator.serviceWorker.ready
@@ -72,7 +117,7 @@ const contentEncoding =
     PushManager.supportedContentEncodings?.includes('aes128gcm')
         ? 'aes128gcm'
         : 'aesgcm';
-        
+
 await fetch('/push/subscribe', {
     method: 'POST',
     credentials: 'same-origin',
@@ -148,7 +193,13 @@ export default function AdminChatDrawer() {
         }).catch(() => {})
     }
 
-    useEffect(() => { load(); pollRef.current = setInterval(load, 3000); return () => clearInterval(pollRef.current) }, [])
+    useEffect(() => {
+    load()
+    autoRegisterPush() // 👈 ADD THIS LINE
+
+    pollRef.current = setInterval(load, 3000)
+    return () => clearInterval(pollRef.current)
+}, [])
     useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [active?.messages])
 
     // Clear selection when tab changes
