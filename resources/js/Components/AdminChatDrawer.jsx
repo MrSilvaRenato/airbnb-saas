@@ -27,13 +27,7 @@ function urlBase64ToUint8Array(base64String) {
     return new Uint8Array([...rawData].map(char => char.charCodeAt(0)))
 }
 
-async function enablePushNotifications() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        alert('Push notifications are not supported on this browser.')
-        return
-    }
-
-    async function testLocalNotification() {
+async function testLocalNotification() {
     try {
         const registration = await navigator.serviceWorker.ready
 
@@ -53,10 +47,16 @@ async function enablePushNotifications() {
     }
 }
 
+async function enablePushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        alert('Push notifications are not supported on this browser.')
+        return
+    }
+
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return
 
-    const registration = await navigator.serviceWorker.register('/sw.js')
+    await navigator.serviceWorker.register('/sw.js')
     const ready = await navigator.serviceWorker.ready
 
     let subscription = await ready.pushManager.getSubscription()
@@ -235,7 +235,7 @@ export default function AdminChatDrawer() {
         <>
             {/* FAB */}
             <button onClick={() => setOpen(o => !o)}
-                className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+                className="fixed bottom-5 right-24 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
                 {open
                     ? <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     : <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -249,7 +249,7 @@ export default function AdminChatDrawer() {
 
             {/* Drawer */}
             {open && (
-                <div className="fixed bottom-24 right-15 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 flex overflow-hidden"
+                <div className="fixed bottom-24 right-5 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 flex overflow-hidden"
                     style={{ width: active ? 520 : 320, height: 580, transition: 'width 0.2s ease' }}>
 
                     {/* Left panel */}
