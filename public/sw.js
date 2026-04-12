@@ -78,51 +78,37 @@ self.addEventListener('fetch', (event) => {
 
 // Push Browser Notifications ChatBot
 self.addEventListener('push', (event) => {
-  let data = {
-    title: 'New live chat message',
-    body: 'You have a new message',
-    data: { url: '/admin/dashboard' },
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
-  }
+  let data = {};
 
   try {
-    if (event.data) {
-      const parsed = event.data.json()
-      data = { ...data, ...parsed }
-    }
-  } catch (e) {
-    console.error('Push parse failed', e)
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {
+      title: 'New message',
+      body: event.data?.text() || '',
+    };
   }
 
+  const title = data.title || 'New live chat message';
+
+  const options = {
+    body: data.body || 'You have a new message',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
+    data: data.data || {},
+  };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon,
-      badge: data.badge,
-      data: data.data,
-      tag: data.tag || 'live-chat',
-    })
-  )
-})
+    self.registration.showNotification(title, options)
+  );
+});
 
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close()
+  event.notification.close();
 
-  const url = event.notification.data?.url || '/admin/dashboard'
+  const url = event.notification.data?.url || '/admin/dashboard';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ('focus' in client) {
-          client.navigate(url)
-          return client.focus()
-        }
-      }
-
-      if (clients.openWindow) {
-        return clients.openWindow(url)
-      }
-    })
-  )
-})
+    clients.openWindow(url)
+  );
+});

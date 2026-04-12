@@ -249,7 +249,7 @@ export default function AdminChatDrawer() {
 
             {/* Drawer */}
             {open && (
-                <div className="fixed bottom-24 right-5 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 flex overflow-hidden"
+                <div className="fixed bottom-24 right-15 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 flex overflow-hidden"
                     style={{ width: active ? 520 : 320, height: 580, transition: 'width 0.2s ease' }}>
 
                     {/* Left panel */}
