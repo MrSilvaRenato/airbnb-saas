@@ -1,9 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\User;
+use App\Notifications\LiveChatGuestMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+
 
 class ChatBotController extends Controller
 {
@@ -38,34 +40,64 @@ class ChatBotController extends Controller
             'updated_at'      => now(),
         ]);
 
-        DB::table('chat_messages')->insert([
-            'conversation_id' => $conv,
-            'sender'          => 'guest',
-            'body'            => $request->message,
-            'created_at'      => now(),
-            'updated_at'      => now(),
-        ]);
+      DB::table('chat_messages')->insert([
+        'conversation_id' => $conv,
+        'sender'          => 'guest',
+        'body'            => $request->message,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $admins = User::where('role', 'admin')->get();
+
+    foreach ($admins as $admin) {
+        $admin->notify(new LiveChatGuestMessage(
+            conversationId: $conv,
+            guestName: $request->name,
+            messagePreview: mb_substr($request->message, 0, 100)
+        ));
+    }
 
         return response()->json(['conversation_id' => $conv]);
     }
 
     public function guestMessage(Request $request, $conversation)
-    {
-        $request->validate(['message' => 'required|string|max:2000']);
-        $conv = DB::table('chat_conversations')->find($conversation);
-        if (!$conv || $conv->status === 'closed') return response()->json(['error' => 'Conversation closed'], 422);
+{
+    $request->validate(['message' => 'required|string|max:2000']);
 
-        DB::table('chat_messages')->insert([
-            'conversation_id' => $conversation,
-            'sender'          => 'guest',
-            'body'            => $request->message,
-            'created_at'      => now(),
+    $conv = DB::table('chat_conversations')->find($conversation);
+
+    if (!$conv || $conv->status === 'closed') {
+        return response()->json(['error' => 'Conversation closed'], 422);
+    }
+
+    DB::table('chat_messages')->insert([
+        'conversation_id' => $conversation,
+        'sender'          => 'guest',
+        'body'            => $request->message,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    DB::table('chat_conversations')
+        ->where('id', $conversation)
+        ->update([
+            'last_message_at' => now(),
             'updated_at'      => now(),
         ]);
-        DB::table('chat_conversations')->where('id', $conversation)->update(['last_message_at' => now(), 'updated_at' => now()]);
 
-        return response()->json(['ok' => true]);
+    $admins = User::where('role', 'admin')->get();
+
+    foreach ($admins as $admin) {
+        $admin->notify(new LiveChatGuestMessage(
+            conversationId: (int) $conversation,
+            guestName: $conv->guest_name ?: 'Guest',
+            messagePreview: mb_substr($request->message, 0, 100)
+        ));
     }
+
+    return response()->json(['ok' => true]);
+}
 
     public function poll($conversation)
     {
