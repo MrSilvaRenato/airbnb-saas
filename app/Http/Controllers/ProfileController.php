@@ -15,6 +15,14 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     /**
+     * Display the user's profile page.
+     */
+    public function show(Request $request): Response
+    {
+        return Inertia::render('Profile/Show');
+    }
+
+    /**
      * Display the user's profile form.
      */
     public function edit(Request $request): Response
@@ -60,7 +68,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return Redirect::route('profile.edit');
+        return Redirect::route('profile.show');
     }
 
     /**
