@@ -20,12 +20,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'business_name',
-        'host_display_name',
-        'profile_bio',
         'email',
-        'phone',
-        'brand_logo_path',
         'password',
         'plan',
         'role',
@@ -38,6 +33,12 @@ class User extends Authenticatable
         'plan_renews_at',
         'plan_ends_at',
         'subscription_started_at',
+        'profile_photo',
+        'tagline',
+        'bio',
+        'location',
+        'website',
+        'phone',
     ];
 
     /**

@@ -15,7 +15,6 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\ExportController;
 // Middleware
@@ -24,6 +23,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ChatBotController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\ProfileController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -46,6 +46,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 // Push Browser notifications for LiveChat to Admin
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('auth');
+
+// Profile
+Route::middleware('auth')->group(function () {
+    Route::get('/profile',        [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit',   [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile',      [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile',     [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -97,16 +105,6 @@ Route::get('/dashboard', function () {
     // unexpected role
     abort(403);
 })->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-Route::post('/profile', [ProfileController::class, 'update']); // fallback
-Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-});
-
-
 
 /*
 |--------------------------------------------------------------------------

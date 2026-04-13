@@ -17,21 +17,14 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name'                 => ['required', 'string', 'max:255'],
-            'phone'                => ['nullable', 'string', 'max:40'],
-            'business_name'        => ['nullable', 'string', 'max:255'],
-            'host_display_name'    => ['nullable', 'string', 'max:255'],
-            'profile_bio'          => ['nullable', 'string', 'max:2000'],
-            'brand_logo_file'      => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
-            'remove_brand_logo'    => ['nullable', 'boolean'],
+            'email'                => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
             'notify_on_guest_view' => ['nullable', 'boolean'],
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
-            ],
+            'tagline'              => ['nullable', 'string', 'max:160'],
+            'bio'                  => ['nullable', 'string', 'max:1000'],
+            'location'             => ['nullable', 'string', 'max:120'],
+            'website'              => ['nullable', 'url', 'max:255'],
+            'phone'                => ['nullable', 'string', 'max:40'],
+            'profile_photo'        => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
         ];
     }
 }

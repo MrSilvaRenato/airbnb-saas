@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Property;
+use App\Models\WelcomePackage;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,53 +16,43 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile page.
-     */
     public function show(Request $request): Response
     {
-        return Inertia::render('Profile/Show');
+        $user = $request->user();
+        $propertiesCount = Property::where('user_id', $user->id)->count();
+        $staysCount = WelcomePackage::whereHas('property', fn($q) => $q->where('user_id', $user->id))->count();
+
+        return Inertia::render('Profile/Show', [
+            'user'            => $user->only('id','name','email','plan','role','profile_photo','tagline','bio','location','website','phone','created_at'),
+            'propertiesCount' => $propertiesCount,
+            'staysCount'      => $staysCount,
+        ]);
     }
 
-    /**
-     * Display the user's profile form.
-     */
     public function edit(Request $request): Response
     {
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
+            'status'          => session('status'),
         ]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $validated = $request->validated();
+        $data = $request->safe()->except('profile_photo');
 
-        $removeLogo = (bool) ($validated['remove_brand_logo'] ?? false);
-        unset($validated['brand_logo_file'], $validated['remove_brand_logo']);
-
-        $user->fill($validated);
-
-        if ($removeLogo && $user->brand_logo_path) {
-            $storedPath = ltrim(str_replace('/storage/', '', $user->brand_logo_path), '/');
-            Storage::disk('public')->delete($storedPath);
-            $user->brand_logo_path = null;
-        }
-
-        if ($request->hasFile('brand_logo_file')) {
-            if ($user->brand_logo_path) {
-                $existingPath = ltrim(str_replace('/storage/', '', $user->brand_logo_path), '/');
-                Storage::disk('public')->delete($existingPath);
+        if ($request->hasFile('profile_photo')) {
+            // Remove old photo
+            if ($user->profile_photo) {
+                $old = str_replace('/storage/', '', $user->profile_photo);
+                Storage::disk('public')->delete($old);
             }
-
-            $path = $request->file('brand_logo_file')->store('brand/users', 'public');
-            $user->brand_logo_path = '/storage/' . $path;
+            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $data['profile_photo'] = '/storage/' . $path;
         }
+
+        $user->fill($data);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -68,22 +60,15 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return Redirect::route('profile.show');
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    /**
-     * Delete the user's account.
-     */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
+        $request->validate(['password' => ['required', 'current_password']]);
 
         $user = $request->user();
-
         Auth::logout();
-
         $user->delete();
 
         $request->session()->invalidate();
