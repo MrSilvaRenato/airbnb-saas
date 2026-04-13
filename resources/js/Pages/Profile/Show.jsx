@@ -10,7 +10,7 @@ const PLAN_BADGE = {
 export default function Show({ user, propertiesCount, staysCount }) {
     const badge = PLAN_BADGE[user.plan] ?? PLAN_BADGE.starter
     const initials = user.name?.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
-    const memberSince = user.created_at ? new Date(user.created_at + 'Z').getFullYear() : null
+    const memberSince = user.created_at ? new Date(user.created_at).getFullYear() : null
 
     return (
         <Shell>

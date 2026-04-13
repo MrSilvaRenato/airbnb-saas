@@ -23,7 +23,10 @@ class ProfileController extends Controller
         $staysCount = WelcomePackage::whereHas('property', fn($q) => $q->where('user_id', $user->id))->count();
 
         return Inertia::render('Profile/Show', [
-            'user'            => $user->only('id','name','email','plan','role','profile_photo','tagline','bio','location','website','phone','created_at'),
+            'user'            => array_merge(
+                $user->only('id','name','email','plan','role','profile_photo','tagline','bio','location','website','phone','created_at'),
+                ['tagline' => $user->tagline ?: null]  // ensure host_display_name never bleeds in
+            ),
             'propertiesCount' => $propertiesCount,
             'staysCount'      => $staysCount,
         ]);
