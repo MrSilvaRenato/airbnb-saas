@@ -85,6 +85,7 @@ export default function Shell({ title, children, right = null }) {
                   </NavLink>
                   <NavLink href="/host/analytics">Analytics</NavLink>
                   {user.plan === 'pro' && <NavLink href="/host/maintenance">Maintenance</NavLink>}
+                  <NavLink href={route('messaging.templates')}>Messages</NavLink>
                   <NavLink href="/billing/manage">
                     <span className="flex items-center gap-1">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -177,6 +178,7 @@ export default function Shell({ title, children, right = null }) {
                 <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
                 <nav className="space-y-1">
                   {user.plan === 'pro' && <Link href="/host/maintenance" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">🔧 Maintenance</Link>}
+                  <Link href={route('messaging.templates')} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">✉️ Messages</Link>
                   <Link href="/billing/manage" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">💳 Billing</Link>
                   <Link href={route('profile.show')} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">👤 Profile</Link>
                   <a href={route('export.stays')} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">⬇️ Export Stays</a>

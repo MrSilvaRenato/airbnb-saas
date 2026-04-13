@@ -25,6 +25,7 @@ use App\Http\Controllers\ChatBotController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\IcalFeedController;
+use App\Http\Controllers\MessageTemplateController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -55,6 +56,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile',       [ProfileController::class, 'update']);           // method spoofing via _method=PATCH
     Route::patch('/profile',      [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',     [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Automated messaging templates
+    Route::get('/messaging/templates',                       [MessageTemplateController::class, 'index'])->name('messaging.templates');
+    Route::patch('/messaging/templates/{template}',          [MessageTemplateController::class, 'update'])->name('messaging.templates.update');
+    Route::delete('/messaging/templates/{template}',         [MessageTemplateController::class, 'destroy'])->name('messaging.templates.destroy');
 });
 
 /*

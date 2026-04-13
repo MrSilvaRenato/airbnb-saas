@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use App\Services\MessageScheduler;
 use Illuminate\Support\Str;
 
 class SyncIcalFeed implements ShouldQueue
@@ -103,7 +104,9 @@ class SyncIcalFeed implements ShouldQueue
                 } else {
                     $data['slug']         = Str::uuid();
                     $data['is_published'] = false;
-                    WelcomePackage::create($data);
+                    $newPkg = WelcomePackage::create($data);
+                    // Schedule automated messages for the new stay
+                    try { (new MessageScheduler)->scheduleForPackage($newPkg); } catch (\Throwable) {}
                 }
             }
 

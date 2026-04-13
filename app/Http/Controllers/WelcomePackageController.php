@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Models\Activity;
+use App\Services\MessageScheduler;
 
 class WelcomePackageController extends Controller
 
@@ -530,6 +531,9 @@ public function edit(Request $request, WelcomePackage $package)
         $r->user()->update(['onboarding_step' => 2]);
     }
 
+    // Schedule automated messages for this package
+    try { (new MessageScheduler)->scheduleForPackage($package); } catch (\Throwable) {}
+
     return redirect()->route('host.dashboard')->with('success', 'Package created.');
 }
 
@@ -830,6 +834,9 @@ public function update(Request $r, WelcomePackage $package)
         'Package Updated',
         ['guest' => $package->guest_first_name]
     );
+
+    // Re-schedule automated messages (dates or email may have changed)
+    try { (new MessageScheduler)->scheduleForPackage($package); } catch (\Throwable) {}
 
     return back()->with('success', 'Stay details updated.');
 }
