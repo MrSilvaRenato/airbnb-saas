@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
-import { Link, router, useForm, usePage } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo } from 'react';
 
 export default function UpdateProfileInformation({
@@ -13,20 +13,18 @@ export default function UpdateProfileInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    const form = useForm({
-        name: user.name,
-        email: user.email,
-        phone: user.phone ?? '',
-        business_name: user.business_name ?? '',
-        host_display_name: user.host_display_name ?? '',
-        profile_bio: user.profile_bio ?? '',
-        brand_logo_file: null,
-        remove_brand_logo: false,
-        notify_on_guest_view: user.notify_on_guest_view ?? false,
-        _method: 'patch',
-    });
-
-    const { data, setData, errors, processing, recentlySuccessful } = form;
+    const { data, setData, post, transform, errors, processing, recentlySuccessful } =
+        useForm({
+            name: user.name,
+            email: user.email,
+            phone: user.phone ?? '',
+            business_name: user.business_name ?? '',
+            host_display_name: user.host_display_name ?? '',
+            profile_bio: user.profile_bio ?? '',
+            brand_logo_file: null,
+            remove_brand_logo: false,
+            notify_on_guest_view: user.notify_on_guest_view ?? false,
+        });
 
     const logoPreview = useMemo(() => {
         if (data.brand_logo_file) {
@@ -46,11 +44,7 @@ export default function UpdateProfileInformation({
     const submit = (e) => {
         e.preventDefault();
 
-        const submitProfile = typeof form.post === 'function'
-            ? form.post
-            : (url, options) => router.post(url, data, options);
-
-        submitProfile(route('profile.update'), {
+        transform((formData) => ({ ...formData, _method: 'patch' })).post(route('profile.update'), {
             forceFormData: true,
         });
     };
