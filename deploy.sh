@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-#!/usr/bin/env bash
 set -e
 cd /var/www/airbnb-saas
 
 echo "Pulling latest code..."
+git reset --hard HEAD
+git clean -fd
 git pull origin main
 
 composer install --no-dev --optimize-autoloader --no-interaction || true
