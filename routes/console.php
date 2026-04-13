@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Send guest welcome emails to guests checking in today (08:00 AEST = 22:00 UTC)
 Schedule::command('hostflows:send-guest-links')->dailyAt('22:00');
+
+// Sync all iCal feeds every 15 minutes
+Schedule::command('ical:sync')->everyFifteenMinutes();

@@ -10,6 +10,8 @@ class WelcomePackage extends Model
 protected $fillable = [
   'property_id',
         'slug',
+        'ical_uid',
+        'ical_source',
         'is_published',
         'qr_code_path',
 

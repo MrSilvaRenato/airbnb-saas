@@ -155,6 +155,7 @@ class PropertyController extends Controller
             'userMeta' => [
                 'plan' => $request->user()->plan ?? 'free',
             ],
+            'icalFeed' => $property->icalFeeds()->first()?->only('id','url','last_synced_at','last_sync_status'),
         ]);
     }
 

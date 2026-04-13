@@ -60,6 +60,11 @@ class Property extends Model
         return $this->hasMany(MaintenanceTask::class);
     }
 
+    public function icalFeeds(): HasMany
+    {
+        return $this->hasMany(IcalFeed::class);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Convenience helpers for dashboard logic

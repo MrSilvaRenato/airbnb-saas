@@ -24,6 +24,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ChatBotController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\IcalFeedController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -163,6 +164,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])
         ->name('properties.destroy');
+
+    // iCal Feeds
+    Route::post('/properties/{property}/ical',       [IcalFeedController::class, 'store'])->name('ical.store');
+    Route::post('/properties/{property}/ical/sync',  [IcalFeedController::class, 'sync'])->name('ical.sync');
+    Route::delete('/properties/{property}/ical',     [IcalFeedController::class, 'destroy'])->name('ical.destroy');
 
     /*
     |-------------------------
