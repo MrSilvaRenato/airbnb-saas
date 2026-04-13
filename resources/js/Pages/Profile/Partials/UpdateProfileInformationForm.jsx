@@ -13,7 +13,7 @@ export default function UpdateProfileInformation({
 }) {
     const user = usePage().props.auth.user;
 
-    const { data, setData, post, errors, processing, recentlySuccessful } =
+    const { data, setData, post, transform, errors, processing, recentlySuccessful } =
         useForm({
             name: user.name,
             email: user.email,
@@ -24,7 +24,6 @@ export default function UpdateProfileInformation({
             brand_logo_file: null,
             remove_brand_logo: false,
             notify_on_guest_view: user.notify_on_guest_view ?? false,
-            _method: 'patch',
         });
 
     const logoPreview = useMemo(() => {
@@ -45,7 +44,7 @@ export default function UpdateProfileInformation({
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('profile.update'), {
+        transform((formData) => ({ ...formData, _method: 'patch' })).post(route('profile.update'), {
             forceFormData: true,
         });
     };
