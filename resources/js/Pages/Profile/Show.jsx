@@ -19,9 +19,9 @@ export default function Show({ user, propertiesCount, staysCount }) {
             <div className="max-w-3xl mx-auto space-y-6">
 
                 {/* Hero card */}
-                <div className="relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="relative bg-white rounded-2xl shadow-sm border border-gray-100">
                     {/* Banner */}
-                    <div className="h-28 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-600" />
+                    <div className="h-28 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-600 rounded-t-2xl" />
 
                     {/* Avatar + info */}
                     <div className="px-6 pb-6">
