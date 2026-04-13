@@ -733,6 +733,14 @@ const IconBroom = () => (
               <span>Edit</span>
             </Link>
 
+            <Link
+              href={route("upsells.index", p.id)}
+              className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+            >
+              <span>💰</span>
+              <span>Upsells</span>
+            </Link>
+
             <button
               className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
               onClick={() => setConfirmId(p.id)}

@@ -26,6 +26,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\IcalFeedController;
 use App\Http\Controllers\MessageTemplateController;
+use App\Http\Controllers\UpsellOfferController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -61,6 +62,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/messaging/templates',                       [MessageTemplateController::class, 'index'])->name('messaging.templates');
     Route::patch('/messaging/templates/{template}',          [MessageTemplateController::class, 'update'])->name('messaging.templates.update');
     Route::delete('/messaging/templates/{template}',         [MessageTemplateController::class, 'destroy'])->name('messaging.templates.destroy');
+
+    // Upsell offers (host management)
+    Route::get('/host/properties/{property}/upsells',        [UpsellOfferController::class, 'index'])->name('upsells.index');
+    Route::post('/host/properties/{property}/upsells',       [UpsellOfferController::class, 'store'])->name('upsells.store');
+    Route::patch('/host/upsells/{offer}',                    [UpsellOfferController::class, 'update'])->name('upsells.update');
+    Route::delete('/host/upsells/{offer}',                   [UpsellOfferController::class, 'destroy'])->name('upsells.destroy');
+    Route::patch('/host/upsell-requests/{upsellRequest}',    [UpsellOfferController::class, 'updateRequest'])->name('upsells.requests.update');
 });
 
 /*
@@ -289,6 +297,9 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 */
 Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
     ->name('public.package');
+
+// Guest upsell request (public, no auth)
+Route::post('/upsells/{offer}/request', [UpsellOfferController::class, 'guestRequest'])->name('upsells.guest.request');
 
 
     

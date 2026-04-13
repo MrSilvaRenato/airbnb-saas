@@ -1,5 +1,5 @@
-import React from 'react'
-import { Head, usePage } from '@inertiajs/react'
+import React, { useState } from 'react'
+import { Head, usePage, useForm } from '@inertiajs/react'
 
 /* ─────────────────────────────────────────────
    INLINE SVG ICONS  (zero external deps)
@@ -360,10 +360,74 @@ function OfflineBanner({ visible }) {
 }
 
 /* ─────────────────────────────────────────────
+   UPSELL OFFER CARD
+───────────────────────────────────────────── */
+function UpsellCard({ offer, packageId, guestEmail, guestName }) {
+  const [open, setOpen] = useState(false)
+  const [done, setDone] = useState(false)
+  const { data, setData, post, processing } = useForm({
+    guest_email: guestEmail,
+    guest_name:  guestName,
+    message:     '',
+    package_id:  packageId,
+  })
+
+  const submit = (e) => {
+    e.preventDefault()
+    post(route('upsells.guest.request', offer.id), {
+      onSuccess: () => { setDone(true); setOpen(false) },
+    })
+  }
+
+  if (done) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 text-sm text-green-700 font-medium">
+        ✅ Request sent for <strong>{offer.title}</strong> — your host will be in touch!
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-4 px-5 py-4">
+        <div className="flex-1">
+          <p className="font-semibold text-gray-800 text-sm">{offer.title}</p>
+          {offer.description && <p className="text-gray-500 text-xs mt-0.5">{offer.description}</p>}
+        </div>
+        <span className="text-sm font-bold text-indigo-700 flex-shrink-0">
+          {offer.price ? `A$${parseFloat(offer.price).toFixed(2)}` : 'Free inquiry'}
+        </span>
+        <button onClick={() => setOpen(o => !o)}
+          className="flex-shrink-0 bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition-transform">
+          {open ? 'Cancel' : 'Request'}
+        </button>
+      </div>
+      {open && (
+        <form onSubmit={submit} className="border-t border-gray-100 px-5 py-4 space-y-3 bg-gray-50">
+          <input type="email" required placeholder="Your email" value={data.guest_email}
+            onChange={e => setData('guest_email', e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white" />
+          <input type="text" placeholder="Your name (optional)" value={data.guest_name}
+            onChange={e => setData('guest_name', e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white" />
+          <textarea placeholder="Any message? (optional)" value={data.message}
+            onChange={e => setData('message', e.target.value)} rows={2}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none bg-white" />
+          <button type="submit" disabled={processing}
+            className="w-full bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+            {processing ? 'Sending…' : 'Send request to host'}
+          </button>
+        </form>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 export default function Package() {
-  const { pkg, branding } = usePage().props
+  const { pkg, branding, upsells = [], package_id, guest_email = '', guest_name = '', flash = {} } = usePage().props
 
   const quick = pkg.quick || {}
 
@@ -637,6 +701,23 @@ export default function Package() {
             </>
           )}
         </div>
+
+        {/* ── UPSELLS ── */}
+        {upsells.length > 0 && (
+          <div className="mt-8">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Add-ons & Extras</p>
+            {flash.upsell_success && (
+              <div className="mb-3 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
+                {flash.upsell_success}
+              </div>
+            )}
+            <div className="grid gap-3">
+              {upsells.map(o => (
+                <UpsellCard key={o.id} offer={o} packageId={package_id} guestEmail={guest_email} guestName={guest_name} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── SHARE ROW ── */}
         <div className="mt-8 flex gap-3">
