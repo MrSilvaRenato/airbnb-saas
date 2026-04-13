@@ -52,10 +52,10 @@ public function index(Request $request)
     $totalVisits7d  = \App\Models\PackageVisit::whereIn('welcome_package_id', $allPackageIds)
                         ->where('visited_at', '>=', now()->subDays(7))->count();
 
-    // 4) Plan limits — Starter(free): 1/1 | Host: 5/∞ | Pro: ∞/∞
+    // 4) Plan limits — Starter(free):1/1 | Growth:5/∞ | Pro:∞/∞ | Agency:∞/∞
     $propertyLimit = !is_null($override) ? $override : match($userPlan) {
-        'pro'  => 9999,
-        'host' => 5,
+        'pro', 'agency' => 9999,
+        'growth', 'host' => 5, // host = legacy growth
         default => 1,
     };
     $canCreateProperty = $propertyCount < $propertyLimit;
@@ -63,7 +63,7 @@ public function index(Request $request)
     $activeStayCount = \App\Models\WelcomePackage::whereIn('property_id', $allProps->pluck('id'))
         ->whereDate('check_out_date', '>=', now()->toDateString())
         ->count();
-    $stayLimit     = in_array($userPlan, ['host', 'pro']) ? 9999 : 1;
+    $stayLimit     = in_array($userPlan, ['growth', 'host', 'pro', 'agency']) ? 9999 : 1;
     $canCreateStay = $activeStayCount < $stayLimit;
 
     // 5) Recent activities  (← moved ABOVE the render)

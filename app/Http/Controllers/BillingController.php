@@ -29,10 +29,12 @@ class BillingController extends Controller
             abort(403);
         }
 
-        $plan = $request->input('plan', 'host'); // 'host' or 'pro'
-        $priceId = $plan === 'pro'
-            ? config('stripe.price_pro')
-            : config('stripe.price_host');
+        $plan = $request->input('plan', 'growth'); // 'growth', 'pro', or 'agency'
+        $priceId = match($plan) {
+            'pro'    => config('stripe.price_pro'),
+            'agency' => config('stripe.price_agency'),
+            default  => config('stripe.price_growth'), // growth
+        };
 
         if (!$priceId) {
             abort(500, 'Stripe price not configured.');
@@ -77,11 +79,12 @@ public function success(Request $request)
 
     return Inertia::render('Billing/Success', [
         'plan' => $user->plan ?? 'free',
-        'message' => $user->plan === 'pro'
-            ? "You're on Pro. Unlimited properties, maintenance tracking, and guest auto-communication are unlocked."
-            : ($user->plan === 'host'
-                ? "You're on Host. Up to 5 properties and branding are unlocked."
-                : "Payment complete. We're finalizing your upgrade…"),
+        'message' => match($user->plan) {
+            'pro'           => "You're on Pro. Unlimited properties, full analytics, maintenance tracking, and upsells unlocked.",
+            'agency'        => "You're on Agency. Everything unlocked.",
+            'growth', 'host'=> "You're on Growth. Up to 5 properties, iCal sync, automated messaging, upsells, and branding unlocked.",
+            default         => "Payment complete. We're finalizing your upgrade…",
+        },
     ]);
 }
 
@@ -221,7 +224,7 @@ public function success(Request $request)
         RefundRequest::create([
             'user_id'                => $user->id,
             'plan'                   => $user->plan,
-            'amount'                 => match($user->plan) { 'pro' => 49, 'host' => 19, default => 0 },
+            'amount'                 => match($user->plan) { 'pro' => 79, 'agency' => 199, 'growth' => 29, 'host' => 29, default => 0 },
             'reason'                 => $request->reason,
             'status'                 => 'pending',
             'subscription_started_at' => $user->subscription_started_at,
@@ -236,14 +239,16 @@ public function success(Request $request)
      */
     public function upgradeSubscription(Request $request)
     {
-        $request->validate(['plan' => 'required|in:host,pro']);
+        $request->validate(['plan' => 'required|in:growth,pro,agency,host']); // host kept for legacy
 
         $user = $request->user();
-        $plan = $request->plan;
+        $plan = $request->plan === 'host' ? 'growth' : $request->plan; // normalize legacy
 
-        $priceId = $plan === 'pro'
-            ? config('stripe.price_pro')
-            : config('stripe.price_host');
+        $priceId = match($plan) {
+            'pro'    => config('stripe.price_pro'),
+            'agency' => config('stripe.price_agency'),
+            default  => config('stripe.price_growth'),
+        };
 
         \Stripe\Stripe::setApiKey(config('stripe.secret'));
 

@@ -201,9 +201,11 @@ class StripeWebhookController extends Controller
         // Determine which plan from the Stripe price ID
         $priceId   = $subscription->items->data[0]->price->id ?? null;
         $planValue = match(true) {
-            $priceId === config(‘stripe.price_pro’)  => ‘pro’,
-            $priceId === config(‘stripe.price_host’) => ‘host’,
-            default                                  => ‘host’, // fallback for legacy price_id
+            $priceId === config(‘stripe.price_pro’)    => ‘pro’,
+            $priceId === config(‘stripe.price_agency’) => ‘agency’,
+            $priceId === config(‘stripe.price_growth’) => ‘growth’,
+            $priceId === config(‘stripe.price_host’)   => ‘growth’, // legacy host maps to growth
+            default                                    => ‘growth’,
         };
 
         $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
