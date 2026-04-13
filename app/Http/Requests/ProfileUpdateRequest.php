@@ -25,6 +25,12 @@ class ProfileUpdateRequest extends FormRequest
             'website'              => ['nullable', 'url', 'max:255'],
             'phone'                => ['nullable', 'string', 'max:40'],
             'profile_photo'        => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
+            // Legacy Codex fields — accepted but ignored
+            'business_name'        => ['nullable', 'string', 'max:255'],
+            'host_display_name'    => ['nullable', 'string', 'max:255'],
+            'profile_bio'          => ['nullable', 'string'],
+            'brand_logo_file'      => ['nullable', 'file'],
+            'remove_brand_logo'    => ['nullable'],
         ];
     }
 }
