@@ -8,11 +8,20 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    /**
+     * Display the user's profile page.
+     */
+    public function show(Request $request): Response
+    {
+        return Inertia::render('Profile/Show');
+    }
+
     /**
      * Display the user's profile form.
      */
@@ -29,15 +38,37 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $validated = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $removeLogo = (bool) ($validated['remove_brand_logo'] ?? false);
+        unset($validated['brand_logo_file'], $validated['remove_brand_logo']);
+
+        $user->fill($validated);
+
+        if ($removeLogo && $user->brand_logo_path) {
+            $storedPath = ltrim(str_replace('/storage/', '', $user->brand_logo_path), '/');
+            Storage::disk('public')->delete($storedPath);
+            $user->brand_logo_path = null;
         }
 
-        $request->user()->save();
+        if ($request->hasFile('brand_logo_file')) {
+            if ($user->brand_logo_path) {
+                $existingPath = ltrim(str_replace('/storage/', '', $user->brand_logo_path), '/');
+                Storage::disk('public')->delete($existingPath);
+            }
 
-        return Redirect::route('profile.edit');
+            $path = $request->file('brand_logo_file')->store('brand/users', 'public');
+            $user->brand_logo_path = '/storage/' . $path;
+        }
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return Redirect::route('profile.show');
     }
 
     /**
