@@ -3,8 +3,9 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo } from 'react';
+
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -41,13 +42,13 @@ export default function UpdateProfileInformation({
         };
     }, [data.brand_logo_file, logoPreview]);
 
-    const submit = (e) => {
-        e.preventDefault();
+const submit = (e) => {
+    e.preventDefault();
 
-        transform((formData) => ({ ...formData, _method: 'patch' })).post(route('profile.update'), {
-            forceFormData: true,
-        });
-    };
+    router.post(route('profile.update'), data, {
+        forceFormData: true,
+    });
+};
 
     return (
         <section className={className}>
