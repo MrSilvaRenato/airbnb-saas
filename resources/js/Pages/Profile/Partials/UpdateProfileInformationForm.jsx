@@ -46,7 +46,10 @@ export default function UpdateProfileInformation({
 const submit = (e) => {
     e.preventDefault();
 
-    router.post(route('profile.update'), data, {
+    router.post(route('profile.update'), {
+        ...data,
+        _method: 'patch',
+    }, {
         forceFormData: true,
     });
 };
