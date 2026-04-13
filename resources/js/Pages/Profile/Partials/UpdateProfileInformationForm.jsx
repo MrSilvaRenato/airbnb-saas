@@ -25,6 +25,7 @@ export default function UpdateProfileInformation({
             brand_logo_file: null,
             remove_brand_logo: false,
             notify_on_guest_view: user.notify_on_guest_view ?? false,
+            _method: 'patch',
         });
 
     const logoPreview = useMemo(() => {
