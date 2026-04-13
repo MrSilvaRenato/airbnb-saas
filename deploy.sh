@@ -10,6 +10,7 @@ git pull origin main
 composer install --no-dev --optimize-autoloader --no-interaction || true
 
 php artisan migrate --force || true
+php artisan storage:link --force || true
 
 rm -rf public/build
 sudo -u deploy bash -lc "cd /var/www/airbnb-saas && npm ci && npm run build" || true
