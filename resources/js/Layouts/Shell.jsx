@@ -66,6 +66,15 @@ export default function Shell({ title, children, right = null }) {
                       )}
                     </span>
                   </NavLink>
+<NavLink href={route('profile.edit')}>
+  <span className="flex items-center gap-1">
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21a8 8 0 1 0-16 0" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+    Profile
+  </span>
+</NavLink>          
                   <NavLink href="/host/calendar">
                     <span className="flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
