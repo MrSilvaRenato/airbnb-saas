@@ -298,8 +298,9 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
     ->name('public.package');
 
-// Guest upsell request (public, no auth)
+// Guest upsell — inquiry (no auth) and Stripe payment (no auth)
 Route::post('/upsells/{offer}/request', [UpsellOfferController::class, 'guestRequest'])->name('upsells.guest.request');
+Route::post('/upsells/{offer}/pay',     [UpsellOfferController::class, 'guestPay'])->name('upsells.guest.pay');
 
 
     

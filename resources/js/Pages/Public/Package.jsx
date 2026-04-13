@@ -365,6 +365,9 @@ function OfflineBanner({ visible }) {
 function UpsellCard({ offer, packageId, guestEmail, guestName }) {
   const [open, setOpen] = useState(false)
   const [done, setDone] = useState(false)
+  const hasPaidPrice = offer.price && parseFloat(offer.price) > 0
+
+  // shared form state for both request + pay
   const { data, setData, post, processing } = useForm({
     guest_email: guestEmail,
     guest_name:  guestName,
@@ -372,11 +375,17 @@ function UpsellCard({ offer, packageId, guestEmail, guestName }) {
     package_id:  packageId,
   })
 
-  const submit = (e) => {
+  const submitRequest = (e) => {
     e.preventDefault()
     post(route('upsells.guest.request', offer.id), {
       onSuccess: () => { setDone(true); setOpen(false) },
     })
+  }
+
+  const submitPay = (e) => {
+    e.preventDefault()
+    // Redirects to Stripe Checkout — use standard form POST via Inertia
+    post(route('upsells.guest.pay', offer.id))
   }
 
   if (done) {
@@ -389,21 +398,29 @@ function UpsellCard({ offer, packageId, guestEmail, guestName }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-      <div className="flex items-center gap-4 px-5 py-4">
-        <div className="flex-1">
+      <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-800 text-sm">{offer.title}</p>
           {offer.description && <p className="text-gray-500 text-xs mt-0.5">{offer.description}</p>}
         </div>
         <span className="text-sm font-bold text-indigo-700 flex-shrink-0">
-          {offer.price ? `A$${parseFloat(offer.price).toFixed(2)}` : 'Free inquiry'}
+          {hasPaidPrice ? `A$${parseFloat(offer.price).toFixed(2)}` : 'Inquiry'}
         </span>
-        <button onClick={() => setOpen(o => !o)}
-          className="flex-shrink-0 bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition-transform">
-          {open ? 'Cancel' : 'Request'}
-        </button>
+        {hasPaidPrice ? (
+          <button onClick={() => setOpen(o => !o)}
+            className="flex-shrink-0 bg-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-green-700 active:scale-95 transition-transform">
+            {open ? 'Cancel' : 'Pay now'}
+          </button>
+        ) : (
+          <button onClick={() => setOpen(o => !o)}
+            className="flex-shrink-0 bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition-transform">
+            {open ? 'Cancel' : 'Request'}
+          </button>
+        )}
       </div>
       {open && (
-        <form onSubmit={submit} className="border-t border-gray-100 px-5 py-4 space-y-3 bg-gray-50">
+        <form onSubmit={hasPaidPrice ? submitPay : submitRequest}
+          className="border-t border-gray-100 px-5 py-4 space-y-3 bg-gray-50">
           <input type="email" required placeholder="Your email" value={data.guest_email}
             onChange={e => setData('guest_email', e.target.value)}
             className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white" />
@@ -413,10 +430,18 @@ function UpsellCard({ offer, packageId, guestEmail, guestName }) {
           <textarea placeholder="Any message? (optional)" value={data.message}
             onChange={e => setData('message', e.target.value)} rows={2}
             className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none bg-white" />
-          <button type="submit" disabled={processing}
-            className="w-full bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50">
-            {processing ? 'Sending…' : 'Send request to host'}
-          </button>
+          {hasPaidPrice ? (
+            <button type="submit" disabled={processing}
+              className="w-full bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2">
+              {processing ? 'Redirecting…' : `Pay A$${parseFloat(offer.price).toFixed(2)} securely`}
+              {!processing && <span className="text-xs opacity-70">via Stripe</span>}
+            </button>
+          ) : (
+            <button type="submit" disabled={processing}
+              className="w-full bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+              {processing ? 'Sending…' : 'Send request to host'}
+            </button>
+          )}
         </form>
       )}
     </div>
@@ -433,6 +458,18 @@ export default function Package() {
 
   // ── State ──────────────────────────────────
   const [toast, setToast] = React.useState({ visible: false, message: '' })
+
+  // Show toast on return from Stripe (upsell_paid / upsell_cancelled query params)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('upsell_paid') === '1') {
+      showToast('✅ Payment successful! Your host has been notified.')
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (params.get('upsell_cancelled') === '1') {
+      showToast('Payment cancelled.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
   const [copiedKey, setCopiedKey] = React.useState(null)
   const [isOffline, setIsOffline] = React.useState(
     typeof navigator !== 'undefined' ? !navigator.onLine : false

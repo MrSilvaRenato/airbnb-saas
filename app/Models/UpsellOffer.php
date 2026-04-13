@@ -15,4 +15,5 @@ class UpsellOffer extends Model
 
     public function property()  { return $this->belongsTo(Property::class); }
     public function requests()  { return $this->hasMany(UpsellRequest::class); }
+    public function orders()    { return $this->hasMany(UpsellOrder::class); }
 }

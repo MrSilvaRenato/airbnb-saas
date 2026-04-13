@@ -12,6 +12,7 @@ use Stripe\Exception\SignatureVerificationException;
 use UnexpectedValueException;
 use Carbon\Carbon;
 use App\Models\User;
+use App\Models\UpsellOrder;
 
 class StripeWebhookController extends Controller
 {
@@ -55,6 +56,10 @@ class StripeWebhookController extends Controller
                 $this->handleCheckoutSessionCompleted($event->data->object);
                 break;
 
+            case 'payment_intent.succeeded':
+                $this->handlePaymentIntentSucceeded($event->data->object);
+                break;
+
             case 'customer.subscription.created':
             case 'customer.subscription.updated':
                 $this->syncSubscriptionToUser($event->data->object);
@@ -76,8 +81,43 @@ class StripeWebhookController extends Controller
     }
 
     /**
+     * Handle payment_intent.succeeded — mark upsell order as paid.
+     */
+    protected function handlePaymentIntentSucceeded($intent)
+    {
+        // Find order by stripe_session_id stored in metadata or by payment_intent
+        $order = UpsellOrder::where('stripe_payment_intent_id', $intent->id)
+            ->orWhere(function ($q) use ($intent) {
+                // Sometimes session completes first and sets the payment_intent
+                $q->where('status', 'pending')
+                  ->whereNotNull('stripe_session_id');
+            })
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$order) return;
+
+        $order->update([
+            'stripe_payment_intent_id' => $intent->id,
+            'status'  => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        // Notify host
+        try {
+            $host  = $order->offer->property->user;
+            $net   = number_format($order->amount - $order->commission, 2);
+            \Illuminate\Support\Facades\Mail::raw(
+                "New paid upsell! 🎉\n\nOffer: {$order->offer->title}\nGuest: {$order->guest_name} <{$order->guest_email}>\nAmount paid: A\${$order->amount}\nYour earnings: A\${$net} (after 15% platform fee)\n\nView orders: " . url('/host/properties/' . $order->offer->property_id . '/upsells'),
+                fn($m) => $m->to($host->email)->subject("Payment received: {$order->offer->title}")
+            );
+            $order->update(['host_notified_at' => now()]);
+        } catch (\Throwable) {}
+    }
+
+    /**
      * Called after checkout completes.
-     * We can grab the subscription ID from the session and sync.
+     * Handles both subscription checkouts AND upsell one-time payments.
      */
     protected function handleCheckoutSessionCompleted($session)
     {
@@ -101,9 +141,30 @@ class StripeWebhookController extends Controller
             $user->stripe_subscription_id = $session->subscription;
         }
 
-        // We don't flip plan here yet, we'll flip in syncSubscriptionToUser
-        // after we pull full subscription object.
         $user->save();
+
+        // ── Upsell one-time payment ──
+        // If this session is for an upsell order, link the payment_intent
+        $orderId = $session->metadata->upsell_order_id ?? null;
+        if ($orderId) {
+            $order = UpsellOrder::find($orderId);
+            if ($order && $order->status === 'pending') {
+                $order->update([
+                    'stripe_payment_intent_id' => $session->payment_intent,
+                    'status'  => 'paid',
+                    'paid_at' => now(),
+                ]);
+                try {
+                    $host = $order->offer->property->user;
+                    $net  = number_format($order->amount - $order->commission, 2);
+                    \Illuminate\Support\Facades\Mail::raw(
+                        "New paid upsell! 🎉\n\nOffer: {$order->offer->title}\nGuest: {$order->guest_name} <{$order->guest_email}>\nAmount: A\${$order->amount}\nYour earnings: A\${$net} (after 15% fee)\n\nView: " . url('/host/properties/' . $order->offer->property_id . '/upsells'),
+                        fn($m) => $m->to($host->email)->subject("Payment received: {$order->offer->title}")
+                    );
+                    $order->update(['host_notified_at' => now()]);
+                } catch (\Throwable) {}
+            }
+        }
     }
 
     /**
