@@ -46,7 +46,7 @@ export default function UpdateProfileInformation({
 const submit = (e) => {
     e.preventDefault();
 
-    router.post(route('profile.update'), {
+    router.patch(route('profile.update'), {
         ...data,
         _method: 'patch',
     }, {
