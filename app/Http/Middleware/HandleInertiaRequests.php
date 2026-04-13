@@ -20,9 +20,15 @@ class HandleInertiaRequests extends Middleware
      * Determine the current asset version.
      */
     public function version(Request $request): ?string
-{
-    return md5_file(public_path('build/manifest.json'));
-}
+    {
+        $manifest = public_path('build/manifest.json');
+
+        if (file_exists($manifest)) {
+            return md5_file($manifest);
+        }
+
+        return parent::version($request);
+    }
 
     /**
      * Define the props that are shared by default.
@@ -34,7 +40,19 @@ public function share(Request $request): array
     return array_merge(parent::share($request), [
         'auth' => [
             'user' => $request->user()
-                ? $request->user()->only('id','name','email','role','plan','notify_on_guest_view')
+                ? $request->user()->only(
+                    'id',
+                    'name',
+                    'email',
+                    'phone',
+                    'business_name',
+                    'host_display_name',
+                    'profile_bio',
+                    'brand_logo_path',
+                    'role',
+                    'plan',
+                    'notify_on_guest_view'
+                )
                 : null,
         ],
         'flash' => [
