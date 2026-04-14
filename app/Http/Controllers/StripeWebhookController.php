@@ -4,10 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Stripe\Stripe;
 use Stripe\Webhook;
-use Stripe\Event as StripeEvent;
-use Stripe\Subscription;
 use Stripe\Exception\SignatureVerificationException;
 use UnexpectedValueException;
 use Carbon\Carbon;
@@ -22,10 +19,9 @@ class StripeWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        // 1. Verify webhook signature (security)
-        $payload    = $request->getContent();
-        $sigHeader  = $request->header('Stripe-Signature');
-        $secret     = config('stripe.webhook_secret'); // STRIPE_WEBHOOK_SECRET in .env
+        $payload   = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+        $secret    = config('stripe.webhook_secret');
 
         try {
             $event = Webhook::constructEvent(
@@ -34,22 +30,12 @@ class StripeWebhookController extends Controller
                 $secret
             );
         } catch (UnexpectedValueException $e) {
-            // Invalid payload
             Log::warning('Stripe webhook: invalid payload', ['err' => $e->getMessage()]);
             return response('Invalid payload', 400);
         } catch (SignatureVerificationException $e) {
-            // Invalid signature
             Log::warning('Stripe webhook: invalid signature', ['err' => $e->getMessage()]);
             return response('Invalid signature', 400);
         }
-
-        // 2. We only really care about subscription lifecycle events
-        //    These are the core ones for SaaS:
-        //
-        //    - checkout.session.completed
-        //    - customer.subscription.created
-        //    - customer.subscription.updated
-        //    - customer.subscription.deleted (cancellations / churn)
 
         switch ($event->type) {
             case 'checkout.session.completed':
@@ -70,13 +56,11 @@ class StripeWebhookController extends Controller
                 break;
 
             default:
-                // You can log other events if you like during dev:
                 Log::info('Stripe webhook: unhandled event type', [
                     'type' => $event->type,
                 ]);
         }
 
-        // 3. Stripe expects a 200 OK if we handled it
         return response('ok', 200);
     }
 
@@ -85,34 +69,40 @@ class StripeWebhookController extends Controller
      */
     protected function handlePaymentIntentSucceeded($intent)
     {
-        // Find order by stripe_session_id stored in metadata or by payment_intent
         $order = UpsellOrder::where('stripe_payment_intent_id', $intent->id)
-            ->orWhere(function ($q) use ($intent) {
-                // Sometimes session completes first and sets the payment_intent
+            ->orWhere(function ($q) {
                 $q->where('status', 'pending')
                   ->whereNotNull('stripe_session_id');
             })
             ->where('status', 'pending')
             ->first();
 
-        if (!$order) return;
+        if (!$order) {
+            return;
+        }
 
         $order->update([
             'stripe_payment_intent_id' => $intent->id,
-            'status'  => 'paid',
+            'status' => 'paid',
             'paid_at' => now(),
         ]);
 
-        // Notify host
         try {
-            $host  = $order->offer->property->user;
-            $net   = number_format($order->amount - $order->commission, 2);
+            $host = $order->offer->property->user;
+            $net = number_format($order->amount - $order->commission, 2);
+
             \Illuminate\Support\Facades\Mail::raw(
                 "New paid upsell! 🎉\n\nOffer: {$order->offer->title}\nGuest: {$order->guest_name} <{$order->guest_email}>\nAmount paid: A\${$order->amount}\nYour earnings: A\${$net} (after 15% platform fee)\n\nView orders: " . url('/host/properties/' . $order->offer->property_id . '/upsells'),
-                fn($m) => $m->to($host->email)->subject("Payment received: {$order->offer->title}")
+                fn ($m) => $m->to($host->email)->subject("Payment received: {$order->offer->title}")
             );
+
             $order->update(['host_notified_at' => now()]);
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            Log::warning('Stripe webhook: failed to notify upsell host', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -126,6 +116,7 @@ class StripeWebhookController extends Controller
         }
 
         $user = User::where('stripe_customer_id', $session->customer)->first();
+
         if (!$user) {
             Log::warning('Stripe webhook: no user for checkout.session.completed', [
                 'customer' => $session->customer,
@@ -133,20 +124,19 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // Save subscription ID and activate plan immediately.
-        // Read the plan from metadata we set at checkout creation —
-        // no extra Stripe API call needed.
-        if ($session->subscription) {
+        if (!empty($session->subscription)) {
             $plan = $session->metadata->plan ?? null;
             $validPlans = ['growth', 'pro', 'agency'];
 
-            if ($plan && in_array($plan, $validPlans)) {
-                $user->plan                   = $plan;
+            if ($plan && in_array($plan, $validPlans, true)) {
+                $user->plan = $plan;
                 $user->stripe_subscription_id = $session->subscription;
-                $user->stripe_status          = 'active';
+                $user->stripe_status = 'active';
+
                 if (!$user->subscription_started_at) {
                     $user->subscription_started_at = now();
                 }
+
                 $user->save();
 
                 Log::info('Stripe webhook: plan activated via checkout.session.completed', [
@@ -154,32 +144,39 @@ class StripeWebhookController extends Controller
                     'plan' => $plan,
                 ]);
             } else {
-                // Fallback: just save subscription ID;
-                // customer.subscription.created will finish the sync
                 $user->stripe_subscription_id = $session->subscription;
                 $user->save();
             }
         }
 
-        // ── Upsell one-time payment ──
         $orderId = $session->metadata->upsell_order_id ?? null;
+
         if ($orderId) {
             $order = UpsellOrder::find($orderId);
+
             if ($order && $order->status === 'pending') {
                 $order->update([
                     'stripe_payment_intent_id' => $session->payment_intent,
-                    'status'  => 'paid',
+                    'status' => 'paid',
                     'paid_at' => now(),
                 ]);
+
                 try {
                     $host = $order->offer->property->user;
-                    $net  = number_format($order->amount - $order->commission, 2);
+                    $net = number_format($order->amount - $order->commission, 2);
+
                     \Illuminate\Support\Facades\Mail::raw(
                         "New paid upsell! 🎉\n\nOffer: {$order->offer->title}\nGuest: {$order->guest_name} <{$order->guest_email}>\nAmount: A\${$order->amount}\nYour earnings: A\${$net} (after 15% fee)\n\nView: " . url('/host/properties/' . $order->offer->property_id . '/upsells'),
-                        fn($m) => $m->to($host->email)->subject("Payment received: {$order->offer->title}")
+                        fn ($m) => $m->to($host->email)->subject("Payment received: {$order->offer->title}")
                     );
+
                     $order->update(['host_notified_at' => now()]);
-                } catch (\Throwable) {}
+                } catch (\Throwable $e) {
+                    Log::warning('Stripe webhook: failed to notify upsell host after checkout', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
         }
     }
@@ -187,140 +184,77 @@ class StripeWebhookController extends Controller
     /**
      * Map Stripe subscription -> our User billing columns.
      */
-    // protected function syncSubscriptionToUser($subscription)
-    // {
-    //     // subscription has:
-    //     //  - customer (cus_xxx)
-    //     //  - status ('active', 'trialing', 'canceled', etc.)
-    //     //  - current_period_end (unix timestamp)
-
-    //     if (!$subscription->customer) {
-    //         return;
-    //     }
-
-    //     $user = User::where('stripe_customer_id', $subscription->customer)->first();
-    //     if (!$user) {
-    //         Log::warning('Stripe webhook: no user for subscription sync', [
-    //             'customer' => $subscription->customer,
-    //         ]);
-    //         return;
-    //     }
-
-    //     // status from Stripe
-    //     $status = $subscription->status; // e.g. 'active', 'trialing', 'past_due', 'canceled'
-
-    //     // renewal date
-    //     $renewsAt = null;
-    //     if (!empty($subscription->current_period_end)) {
-    //         $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
-    //     }
-
-    //     // Determine which plan from the Stripe price ID
-    //     $priceId      = $subscription->items->data[0]->price->id ?? null;
-    //     $priceGrowth  = config('stripe.price_growth');
-    //     $pricePro     = config('stripe.price_pro');
-    //     $priceAgency  = config('stripe.price_agency');
-    //     $priceHost    = config('stripe.price_host');
-
-    //     if ($priceId === $pricePro) {
-    //         $planValue = ‘pro’;
-    //     } elseif ($priceId === $priceAgency) {
-    //         $planValue = ‘agency’;
-    //     } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
-    //         $planValue = ‘growth’;
-    //     } else {
-    //         $planValue = ‘growth’; // safe default
-    //     }
-
-    //     $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
-
-    //     if (in_array($status, [‘active’, ‘trialing’, ‘past_due’])) {
-    //         $user->plan                   = $planValue;
-    //         $user->stripe_status          = $status;
-    //         $user->stripe_subscription_id = $subscription->id;
-    //         $user->plan_renews_at         = $renewsAt;
-    //         $user->plan_ends_at           = $cancelAtPeriodEnd ? $renewsAt : null;
-
-    //         // Record subscription start date once
-    //         if (!$user->subscription_started_at) {
-    //             $startedAt = !empty($subscription->start_date)
-    //                 ? Carbon::createFromTimestamp($subscription->start_date)
-    //                 : now();
-    //             $user->subscription_started_at = $startedAt;
-    //         }
-    //     } else {
-    //         $user->plan                   = ‘free’;
-    //         $user->stripe_status          = $status;
-    //         $user->stripe_subscription_id = $subscription->id;
-    //         $user->plan_renews_at         = null;
-    //         $user->plan_ends_at           = null;
-    //     }
-
-    //     $user->save();
-    // }
-
     protected function syncSubscriptionToUser($subscription)
-{
-    if (!$subscription->customer) {
-        return;
-    }
-
-    $user = User::where('stripe_customer_id', $subscription->customer)->first();
-    if (!$user) {
-        Log::warning('Stripe webhook: no user for subscription sync', [
-            'customer' => $subscription->customer,
-        ]);
-        return;
-    }
-
-    $status = $subscription->status;
-
-    $renewsAt = null;
-    if (!empty($subscription->current_period_end)) {
-        $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
-    }
-
-    $priceId      = $subscription->items->data[0]->price->id ?? null;
-    $priceGrowth  = config('stripe.price_growth');
-    $pricePro     = config('stripe.price_pro');
-    $priceAgency  = config('stripe.price_agency');
-    $priceHost    = config('stripe.price_host');
-
-    if ($priceId === $pricePro) {
-        $planValue = 'pro';
-    } elseif ($priceId === $priceAgency) {
-        $planValue = 'agency';
-    } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
-        $planValue = 'growth';
-    } else {
-        $planValue = 'growth';
-    }
-
-    $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
-
-    if (in_array($status, ['active', 'trialing', 'past_due'])) {
-        $user->plan                   = $planValue;
-        $user->stripe_status          = $status;
-        $user->stripe_subscription_id = $subscription->id;
-        $user->plan_renews_at         = $renewsAt;
-        $user->plan_ends_at           = $cancelAtPeriodEnd ? $renewsAt : null;
-
-        if (!$user->subscription_started_at) {
-            $startedAt = !empty($subscription->start_date)
-                ? Carbon::createFromTimestamp($subscription->start_date)
-                : now();
-            $user->subscription_started_at = $startedAt;
+    {
+        if (!$subscription->customer) {
+            return;
         }
-    } else {
-        $user->plan                   = 'free';
-        $user->stripe_status          = $status;
-        $user->stripe_subscription_id = $subscription->id;
-        $user->plan_renews_at         = null;
-        $user->plan_ends_at           = null;
-    }
 
-    $user->save();
-}
+        $user = User::where('stripe_customer_id', $subscription->customer)->first();
+
+        if (!$user) {
+            Log::warning('Stripe webhook: no user for subscription sync', [
+                'customer' => $subscription->customer,
+            ]);
+            return;
+        }
+
+        $status = $subscription->status;
+        $renewsAt = null;
+
+        if (!empty($subscription->current_period_end)) {
+            $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
+        }
+
+        $priceId = $subscription->items->data[0]->price->id ?? null;
+        $priceGrowth = config('stripe.price_growth');
+        $pricePro = config('stripe.price_pro');
+        $priceAgency = config('stripe.price_agency');
+        $priceHost = config('stripe.price_host');
+
+        if ($priceId === $pricePro) {
+            $planValue = 'pro';
+        } elseif ($priceId === $priceAgency) {
+            $planValue = 'agency';
+        } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
+            $planValue = 'growth';
+        } else {
+            $planValue = 'growth';
+        }
+
+        $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
+
+        if (in_array($status, ['active', 'trialing', 'past_due'], true)) {
+            $user->plan = $planValue;
+            $user->stripe_status = $status;
+            $user->stripe_subscription_id = $subscription->id;
+            $user->plan_renews_at = $renewsAt;
+            $user->plan_ends_at = $cancelAtPeriodEnd ? $renewsAt : null;
+
+            if (!$user->subscription_started_at) {
+                $user->subscription_started_at = !empty($subscription->start_date)
+                    ? Carbon::createFromTimestamp($subscription->start_date)
+                    : now();
+            }
+        } else {
+            $user->plan = 'free';
+            $user->stripe_status = $status;
+            $user->stripe_subscription_id = $subscription->id;
+            $user->plan_renews_at = null;
+            $user->plan_ends_at = null;
+        }
+
+        $user->save();
+
+        Log::info('Stripe webhook: subscription synced', [
+            'user' => $user->id,
+            'customer' => $subscription->customer,
+            'subscription_id' => $subscription->id,
+            'status' => $status,
+            'price_id' => $priceId,
+            'plan' => $user->plan,
+        ]);
+    }
 
     /**
      * Handle cancellation: customer.subscription.deleted
@@ -332,15 +266,23 @@ class StripeWebhookController extends Controller
         }
 
         $user = User::where('stripe_customer_id', $subscription->customer)->first();
+
         if (!$user) {
             return;
         }
 
-        $user->plan                   = 'free';
-        $user->stripe_status          = $subscription->status ?? 'canceled';
-        $user->plan_renews_at         = null;
-        // keep stripe_subscription_id for history if you want
+        $user->plan = 'free';
+        $user->stripe_status = $subscription->status ?? 'canceled';
+        $user->plan_renews_at = null;
+        $user->plan_ends_at = now();
 
         $user->save();
+
+        Log::info('Stripe webhook: user downgraded to free', [
+            'user' => $user->id,
+            'customer' => $subscription->customer,
+            'subscription_id' => $subscription->id ?? null,
+            'status' => $subscription->status ?? 'canceled',
+        ]);
     }
 }
