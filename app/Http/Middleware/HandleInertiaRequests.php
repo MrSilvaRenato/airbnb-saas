@@ -20,9 +20,15 @@ class HandleInertiaRequests extends Middleware
      * Determine the current asset version.
      */
     public function version(Request $request): ?string
-{
-    return md5_file(public_path('build/manifest.json'));
-}
+    {
+        $manifest = public_path('build/manifest.json');
+
+        if (file_exists($manifest)) {
+            return md5_file($manifest);
+        }
+
+        return parent::version($request);
+    }
 
     /**
      * Define the props that are shared by default.

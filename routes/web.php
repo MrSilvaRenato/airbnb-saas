@@ -15,6 +15,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\ExportController;
 // Middleware
@@ -147,6 +148,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/host/analytics', [AnalyticsController::class, 'index'])
         ->name('host.analytics');
+
+    Route::get('/messaging/templates', [MessagingTemplateController::class, 'index'])->name('messaging.templates');
+    Route::get('/messaging/templates/{template}/edit', [MessagingTemplateController::class, 'edit'])->name('messaging.templates.edit');
+    Route::put('/messaging/templates/{template}', [MessagingTemplateController::class, 'update'])->name('messaging.templates.update');
+
 
     Route::get('/host/calendar', [CalendarController::class, 'index'])
         ->name('host.calendar');
