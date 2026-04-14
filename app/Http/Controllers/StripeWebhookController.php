@@ -142,11 +142,8 @@ class StripeWebhookController extends Controller
             // This is the primary plan-update path — don't rely solely on
             // customer.subscription.created arriving separately.
             try {
-                Stripe::setApiKey(config('stripe.secret'));
-                $subscription = Subscription::retrieve([
-                    'id'     => $session->subscription,
-                    'expand' => ['items.data.price'],
-                ]);
+                \Stripe\Stripe::setApiKey(config('stripe.secret'));
+                $subscription = \Stripe\Subscription::retrieve($session->subscription);
                 $this->syncSubscriptionToUser($subscription);
             } catch (\Throwable $e) {
                 Log::error('Stripe webhook: failed to sync subscription after checkout', [
