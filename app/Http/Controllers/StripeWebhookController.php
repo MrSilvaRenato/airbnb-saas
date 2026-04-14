@@ -121,8 +121,6 @@ class StripeWebhookController extends Controller
      */
     protected function handleCheckoutSessionCompleted($session)
     {
-        // $session->customer = 'cus_123...'
-        // $session->subscription = 'sub_123...'
         if (!$session->customer) {
             return;
         }
@@ -135,16 +133,30 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // You can save subscription_id early here, but final truth
-        // will be in customer.subscription.* events anyway.
+        // Save subscription ID immediately
         if ($session->subscription) {
             $user->stripe_subscription_id = $session->subscription;
+            $user->save();
+
+            // Retrieve the full subscription object and sync plan right away.
+            // This is the primary plan-update path — don't rely solely on
+            // customer.subscription.created arriving separately.
+            try {
+                Stripe::setApiKey(config('stripe.secret'));
+                $subscription = Subscription::retrieve([
+                    'id'     => $session->subscription,
+                    'expand' => ['items.data.price'],
+                ]);
+                $this->syncSubscriptionToUser($subscription);
+            } catch (\Throwable $e) {
+                Log::error('Stripe webhook: failed to sync subscription after checkout', [
+                    'subscription' => $session->subscription,
+                    'error'        => $e->getMessage(),
+                ]);
+            }
         }
 
-        $user->save();
-
         // ── Upsell one-time payment ──
-        // If this session is for an upsell order, link the payment_intent
         $orderId = $session->metadata->upsell_order_id ?? null;
         if ($orderId) {
             $order = UpsellOrder::find($orderId);
