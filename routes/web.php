@@ -157,17 +157,13 @@ Route::middleware(['auth', EnsureHost::class])->group(function () {
 Route::get('/host/dashboard', [HostDashboardController::class, 'index'])
     ->name('host.dashboard');
 
-    Route::get('/host/calendar', [CalendarController::class, 'index'])
-        ->name('host.calendar');
+    Route::get('/host/calendar', [CalendarController::class, 'index'])->name('host.calendar');
 
     // Onboarding
     Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 
     // Analytics
     Route::get('/host/analytics', [AnalyticsController::class, 'index'])->name('host.analytics');
-
-    // Calendar
-    Route::get('/host/calendar', [CalendarController::class, 'index'])->name('host.calendar');
 
     // Maintenance (pro/agency only — gated inside controller)
     Route::get('/host/maintenance',             [MaintenanceController::class, 'index'])->name('maintenance.index');
