@@ -22,6 +22,7 @@ class UpsellOfferController extends Controller
     public function index(Request $request, Property $property)
     {
         abort_if($property->user_id !== $request->user()->id, 403);
+        abort_unless(in_array($request->user()->plan, ['host', 'growth', 'pro', 'agency']), 403);
 
         return Inertia::render('Host/Upsells/Index', [
             'property' => $property->only('id', 'title'),
@@ -67,6 +68,7 @@ class UpsellOfferController extends Controller
     public function store(Request $request, Property $property)
     {
         abort_if($property->user_id !== $request->user()->id, 403);
+        abort_unless(in_array($request->user()->plan, ['host', 'growth', 'pro', 'agency']), 403);
 
         $data = $request->validate([
             'title'       => 'required|string|max:100',

@@ -84,7 +84,7 @@ export default function Shell({ title, children, right = null }) {
                     </span>
                   </NavLink>
                   <NavLink href="/host/analytics">Analytics</NavLink>
-                  {user.plan === 'pro' && <NavLink href="/host/maintenance">Maintenance</NavLink>}
+                  {['pro', 'agency'].includes(user.plan) && <NavLink href="/host/maintenance">Maintenance</NavLink>}
                   <NavLink href={route('messaging.templates')}>Messages</NavLink>
                   <NavLink href="/billing/manage">
                     <span className="flex items-center gap-1">
@@ -177,7 +177,7 @@ export default function Shell({ title, children, right = null }) {
               <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 p-4 pb-10">
                 <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
                 <nav className="space-y-1">
-                  {user.plan === 'pro' && <Link href="/host/maintenance" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">🔧 Maintenance</Link>}
+                  {['pro', 'agency'].includes(user.plan) && <Link href="/host/maintenance" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">🔧 Maintenance</Link>}
                   <Link href={route('messaging.templates')} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">✉️ Messages</Link>
                   <Link href="/billing/manage" onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">💳 Billing</Link>
                   <Link href={route('profile.show')} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-sm font-medium">👤 Profile</Link>

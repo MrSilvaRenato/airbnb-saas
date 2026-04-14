@@ -12,6 +12,7 @@ class IcalFeedController extends Controller
     public function store(Request $request, Property $property)
     {
         $this->authorize('update', $property);
+        abort_unless(in_array($request->user()->plan, ['host', 'growth', 'pro', 'agency']), 403);
 
         $request->validate(['url' => 'required|url|max:2000']);
 
@@ -25,9 +26,10 @@ class IcalFeedController extends Controller
         return back()->with('success', 'iCal feed saved. Syncing in the background…');
     }
 
-    public function sync(Property $property)
+    public function sync(Request $request, Property $property)
     {
         $this->authorize('update', $property);
+        abort_unless(in_array($request->user()->plan, ['host', 'growth', 'pro', 'agency']), 403);
 
         $feed = $property->icalFeeds()->first();
         if (!$feed) return back()->with('error', 'No iCal feed configured.');
@@ -37,9 +39,10 @@ class IcalFeedController extends Controller
         return back()->with('success', 'Sync started — check back in a moment.');
     }
 
-    public function destroy(Property $property)
+    public function destroy(Request $request, Property $property)
     {
         $this->authorize('update', $property);
+        abort_unless(in_array($request->user()->plan, ['host', 'growth', 'pro', 'agency']), 403);
 
         $property->icalFeeds()->delete();
 

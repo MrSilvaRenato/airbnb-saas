@@ -91,7 +91,7 @@ class PublicPackageController extends Controller
             'logo_url'      => null,
         ];
 
-        if ($owner && $owner->plan === 'pro') {
+        if ($owner && in_array($owner->plan, ['host', 'growth', 'pro', 'agency'])) {
             $branding = [
                 'display_name'  => $prop->brand_display_name,
                 'contact_label' => $prop->brand_contact_label,

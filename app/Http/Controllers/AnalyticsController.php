@@ -18,12 +18,12 @@ class AnalyticsController extends Controller
         $user     = $request->user();
         $userPlan = $user->plan ?? 'free';
 
-        // Gate: only host and pro can access analytics
-        if (!in_array($userPlan, ['host', 'pro'])) {
+        // Gate: growth and above can access analytics
+        if (!in_array($userPlan, ['host', 'growth', 'pro', 'agency'])) {
             return redirect()->route('checkout.show');
         }
 
-        $isPro       = $userPlan === 'pro';
+        $isPro       = in_array($userPlan, ['pro', 'agency']);
         $propertyIds = Property::where('user_id', $user->id)->pluck('id');
         $packageIds  = WelcomePackage::whereIn('property_id', $propertyIds)->pluck('id');
 
