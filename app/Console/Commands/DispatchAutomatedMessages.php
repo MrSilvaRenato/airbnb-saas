@@ -39,50 +39,77 @@ if (!$user || in_array($user->plan, ['free', null], true)) {
                 continue;
             }
 
-            foreach ($templates as $template) {
-                if (!$this->isDue($template->key, $package, $now)) {
-                    continue;
-                }
+        foreach ($packages as $package) {
+    $user = $package->property?->user;
 
-                $alreadySent = DB::table('automated_message_logs')
-                    ->where('package_id', $package->id)
-                    ->where('template_id', $template->id)
-                    ->exists();
+    if (!$user) {
+        $this->warn("Package {$package->id} skipped: no property user");
+        continue;
+    }
 
-                if ($alreadySent) {
-                    continue;
-                }
+    if (in_array($user->plan, ['free', null], true)) {
+        $this->warn("Package {$package->id} skipped: plan {$user->plan}");
+        continue;
+    }
 
-                $subject = $this->renderTemplate($template->subject, $package);
-                $body = $this->renderTemplate($template->body, $package);
+    $templates = MessageTemplate::where('user_id', $user->id)
+        ->where('is_enabled', true)
+        ->get();
 
-                try {
-                    Mail::raw($body, function ($message) use ($package, $subject) {
-                        $message->to($package->guest_email)->subject($subject);
-                    });
+    if ($templates->isEmpty()) {
+        $this->warn("Package {$package->id} skipped: no enabled templates");
+        continue;
+    }
 
-                    DB::table('automated_message_logs')->insert([
-                        'package_id' => $package->id,
-                        'template_id' => $template->id,
-                        'sent_at' => now(),
-                        'status' => 'sent',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-
-                    $sent++;
-                } catch (\Throwable $e) {
-                    DB::table('automated_message_logs')->insert([
-                        'package_id' => $package->id,
-                        'template_id' => $template->id,
-                        'status' => 'failed',
-                        'error' => mb_substr($e->getMessage(), 0, 1000),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
+    foreach ($templates as $template) {
+        if (!$this->isDue($template->key, $package, $now)) {
+            $this->warn("Package {$package->id} skipped: template {$template->key} not due");
+            continue;
         }
+
+        $alreadySent = DB::table('automated_message_logs')
+            ->where('package_id', $package->id)
+            ->where('template_id', $template->id)
+            ->exists();
+
+        if ($alreadySent) {
+            $this->warn("Package {$package->id} skipped: template {$template->key} already sent");
+            continue;
+        }
+
+        $subject = $this->renderTemplate($template->subject, $package);
+        $body = $this->renderTemplate($template->body, $package);
+
+        try {
+            Mail::raw($body, function ($message) use ($package, $subject) {
+                $message->to($package->guest_email)->subject($subject);
+            });
+
+            DB::table('automated_message_logs')->insert([
+                'package_id' => $package->id,
+                'template_id' => $template->id,
+                'sent_at' => now(),
+                'status' => 'sent',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->info("Sent {$template->key} to {$package->guest_email} for package {$package->id}");
+            $sent++;
+        } catch (\Throwable $e) {
+            DB::table('automated_message_logs')->insert([
+                'package_id' => $package->id,
+                'template_id' => $template->id,
+                'status' => 'failed',
+                'error' => mb_substr($e->getMessage(), 0, 1000),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->error("Failed {$template->key} for package {$package->id}: {$e->getMessage()}");
+        }
+    }
+}
 
         $this->info("Automated emails sent: {$sent}");
         return self::SUCCESS;
