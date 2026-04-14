@@ -561,7 +561,7 @@ const IconBroom = () => (
                 .
               </div>
             )}
-          </div>
+     
 
 {/* PLAN LABEL */}
             
