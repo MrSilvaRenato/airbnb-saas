@@ -121,8 +121,6 @@ class StripeWebhookController extends Controller
      */
     protected function handleCheckoutSessionCompleted($session)
     {
-        // $session->customer = 'cus_123...'
-        // $session->subscription = 'sub_123...'
         if (!$session->customer) {
             return;
         }
@@ -135,16 +133,35 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // You can save subscription_id early here, but final truth
-        // will be in customer.subscription.* events anyway.
+        // Save subscription ID and activate plan immediately.
+        // Read the plan from metadata we set at checkout creation —
+        // no extra Stripe API call needed.
         if ($session->subscription) {
-            $user->stripe_subscription_id = $session->subscription;
+            $plan = $session->metadata->plan ?? null;
+            $validPlans = ['growth', 'pro', 'agency'];
+
+            if ($plan && in_array($plan, $validPlans)) {
+                $user->plan                   = $plan;
+                $user->stripe_subscription_id = $session->subscription;
+                $user->stripe_status          = 'active';
+                if (!$user->subscription_started_at) {
+                    $user->subscription_started_at = now();
+                }
+                $user->save();
+
+                Log::info('Stripe webhook: plan activated via checkout.session.completed', [
+                    'user' => $user->id,
+                    'plan' => $plan,
+                ]);
+            } else {
+                // Fallback: just save subscription ID;
+                // customer.subscription.created will finish the sync
+                $user->stripe_subscription_id = $session->subscription;
+                $user->save();
+            }
         }
 
-        $user->save();
-
         // ── Upsell one-time payment ──
-        // If this session is for an upsell order, link the payment_intent
         $orderId = $session->metadata->upsell_order_id ?? null;
         if ($orderId) {
             $order = UpsellOrder::find($orderId);
@@ -199,14 +216,21 @@ class StripeWebhookController extends Controller
         }
 
         // Determine which plan from the Stripe price ID
-        $priceId   = $subscription->items->data[0]->price->id ?? null;
-        $planValue = match(true) {
-            $priceId === config(‘stripe.price_pro’)    => ‘pro’,
-            $priceId === config(‘stripe.price_agency’) => ‘agency’,
-            $priceId === config(‘stripe.price_growth’) => ‘growth’,
-            $priceId === config(‘stripe.price_host’)   => ‘growth’, // legacy host maps to growth
-            default                                    => ‘growth’,
-        };
+        $priceId      = $subscription->items->data[0]->price->id ?? null;
+        $priceGrowth  = config(‘stripe.price_growth’);
+        $pricePro     = config(‘stripe.price_pro’);
+        $priceAgency  = config(‘stripe.price_agency’);
+        $priceHost    = config(‘stripe.price_host’);
+
+        if ($priceId === $pricePro) {
+            $planValue = ‘pro’;
+        } elseif ($priceId === $priceAgency) {
+            $planValue = ‘agency’;
+        } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
+            $planValue = ‘growth’;
+        } else {
+            $planValue = ‘growth’; // safe default
+        }
 
         $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
 

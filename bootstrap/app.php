@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // from the public guest page where attaching a token is unreliable.
         $middleware->validateCsrfTokens(except: [
             'engagement/track',
+            'stripe/webhook',
         ]);
 
         $middleware->web(append: [

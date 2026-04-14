@@ -96,6 +96,8 @@ function Paginator({ links }) {
   );
 }
 
+const PLAN_LABEL = { free: 'Starter', growth: 'Growth', host: 'Growth', pro: 'Pro', agency: 'Agency' };
+
 export default function Dashboard() {
   const {
     properties,
@@ -110,10 +112,23 @@ export default function Dashboard() {
   } = usePage().props;
 
   const firstName = userMeta?.first_name || "Host";
-  const isFreePlan = userMeta?.plan === "free";
+  const currentPlan = userMeta?.plan ?? 'free';
+  const isFreePlan = currentPlan === "free";
   const blockedOnProperty = limits && !limits.canCreateProperty;
   const blockedOnStay = limits && !limits.canCreateStay;
   const showUpgradeBanner = isFreePlan && (blockedOnProperty || blockedOnStay);
+
+  // After checkout, the webhook may not have fired yet. If plan is still free,
+  // poll the server every 4 seconds until the plan is activated (up to 30s).
+  const upgradeProcessing = recentlyUpgraded && isFreePlan;
+  React.useEffect(() => {
+    if (!upgradeProcessing) return;
+    const interval = setInterval(() => {
+      router.reload({ only: ['userMeta', 'limits', 'auth'], preserveScroll: true });
+    }, 4000);
+    const timeout = setTimeout(() => clearInterval(interval), 30000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [upgradeProcessing]);
 
   const items = properties.data;
 
@@ -436,14 +451,30 @@ const IconBroom = () => (
       <OnboardingWizard step={onboarding.step} skipped={onboarding.skipped} />
 
       {/* banners */}
-      {recentlyUpgraded ? (
+      {recentlyUpgraded && upgradeProcessing ? (
+        <div className="rounded-2xl border border-blue-300 bg-blue-50 p-4 mb-4 text-sm">
+          <div className="font-semibold text-blue-800 mb-1 flex items-center gap-2">
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+            Activating your plan…
+          </div>
+          <div className="text-blue-700">
+            Payment received — we’re activating your plan now. This page will update automatically in a few seconds.
+          </div>
+          <button onClick={() => router.reload()} className="mt-3 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700">
+            Refresh now
+          </button>
+        </div>
+      ) : recentlyUpgraded ? (
         <div className="rounded-2xl border border-emerald-500 bg-emerald-50 p-4 mb-4 text-sm">
           <div className="font-semibold text-emerald-800 mb-1">
-            Thanks, {firstName}! You’re on Pro ✅
+            Thanks, {firstName}! You’re on {PLAN_LABEL[currentPlan] ?? currentPlan} ✅
           </div>
           <div className="text-emerald-700">
-            You can now create unlimited properties and stays, add your own
-            branding to guest pages, and see visit analytics for every stay.
+            {currentPlan === ‘agency’
+              ? ‘Everything is unlocked. Enjoy white-label guest pages, unlimited properties, full analytics, maintenance tracking, and priority support.’
+              : currentPlan === ‘pro’
+              ? ‘Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.’
+              : ‘Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.’}
           </div>
         </div>
       ) : showUpgradeBanner ? (
