@@ -149,10 +149,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/host/analytics', [AnalyticsController::class, 'index'])
         ->name('host.analytics');
 
-    Route::get('/messaging/templates', [MessagingTemplateController::class, 'index'])->name('messaging.templates');
-    Route::get('/messaging/templates/{template}/edit', [MessagingTemplateController::class, 'edit'])->name('messaging.templates.edit');
-    Route::put('/messaging/templates/{template}', [MessagingTemplateController::class, 'update'])->name('messaging.templates.update');
-
 
     Route::get('/host/calendar', [CalendarController::class, 'index'])
         ->name('host.calendar');
