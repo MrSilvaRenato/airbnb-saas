@@ -15,7 +15,6 @@
         "laravel/tinker": "^2.10.1",
         "om/icalparser": "^3.2",
         "simplesoftwareio/simple-qrcode": "^4.2",
-        "resend/resend-laravel": "^0.15",
         "stripe/stripe-php": "^18.0",
         "tightenco/ziggy": "^2.0"
     },
