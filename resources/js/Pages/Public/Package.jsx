@@ -192,15 +192,22 @@ function getSectionConfig(type) {
 /* ─────────────────────────────────────────────
    SECTION CARD  (collapsible, smooth transition)
 ───────────────────────────────────────────── */
-function SectionCard({ section, defaultOpen }) {
+function SectionCard({ section, defaultOpen, onExpand }) {
   const [open, setOpen] = React.useState(defaultOpen)
   const cfg = getSectionConfig(section.type)
   const Icon = cfg.icon
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-[3px] ${cfg.border} overflow-hidden`}>
+    <div
+      className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-[3px] ${cfg.border} overflow-hidden`}
+      data-section-id={section.id}
+    >
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          const next = !open
+          setOpen(next)
+          if (next && onExpand) onExpand(section.id)
+        }}
         className="w-full flex items-center gap-3 px-4 py-4 text-left active:bg-gray-50 transition-colors"
         aria-expanded={open}
       >
@@ -477,7 +484,100 @@ export default function Package() {
   const [stickyBarVisible, setStickyBarVisible] = React.useState(false)
 
   // ── Refs ───────────────────────────────────
-  const heroRef = React.useRef(null)
+  const heroRef  = React.useRef(null)
+  const engageRef = React.useRef({ token: null, queue: [], sectionTimers: {} })
+
+  // ── Engagement tracking (Phase 2C) ─────────
+  React.useEffect(() => {
+    const eng = engageRef.current
+
+    // Session token — unique per package per browser session
+    const storageKey = `ef_${package_id}`
+    let tok = null
+    try {
+      tok = sessionStorage.getItem(storageKey)
+      if (!tok) {
+        tok = Math.random().toString(36).slice(2) + Date.now().toString(36)
+        sessionStorage.setItem(storageKey, tok)
+      }
+    } catch {
+      tok = Math.random().toString(36).slice(2) + Date.now().toString(36)
+    }
+    eng.token = tok
+
+    // Queue the initial guide_open event
+    eng.queue.push({ event_type: 'guide_open', welcome_section_id: null, duration_seconds: null })
+
+    function flush() {
+      // Finalise any in-progress section view timers
+      Object.entries(eng.sectionTimers).forEach(([id, start]) => {
+        const dur = Math.round((Date.now() - start) / 1000)
+        if (dur >= 1) {
+          eng.queue.push({
+            event_type: 'section_view',
+            welcome_section_id: parseInt(id, 10),
+            duration_seconds: dur,
+          })
+        }
+        delete eng.sectionTimers[id]
+      })
+
+      const events = eng.queue.splice(0)
+      if (!events.length) return
+
+      fetch('/engagement/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ welcome_package_id: package_id, session_token: tok, events }),
+        keepalive: true,
+      }).catch(() => {})
+    }
+
+    // IntersectionObserver — track which sections scroll into view
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const id = entry.target.dataset.sectionId
+        if (!id) return
+        if (entry.isIntersecting) {
+          eng.sectionTimers[id] = Date.now()
+        } else if (eng.sectionTimers[id]) {
+          const dur = Math.round((Date.now() - eng.sectionTimers[id]) / 1000)
+          if (dur >= 1) {
+            eng.queue.push({
+              event_type: 'section_view',
+              welcome_section_id: parseInt(id, 10),
+              duration_seconds: dur,
+            })
+          }
+          delete eng.sectionTimers[id]
+        }
+      })
+    }, { threshold: 0.3 })
+
+    document.querySelectorAll('[data-section-id]').forEach(el => observer.observe(el))
+
+    // Flush on tab hide / page close (most reliable delivery point)
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    // Also flush after 4 s so guide_open reaches the server quickly
+    const earlyFlush = setTimeout(flush, 4000)
+
+    return () => {
+      clearTimeout(earlyFlush)
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [package_id])
+
+  // Called by SectionCard when the accordion is opened
+  function trackSectionExpand(sectionId) {
+    const eng = engageRef.current
+    if (!eng.token) return
+    eng.queue.push({ event_type: 'section_expand', welcome_section_id: sectionId, duration_seconds: null })
+  }
 
   // ── Offline detection ──────────────────────
   React.useEffect(() => {
@@ -732,7 +832,7 @@ export default function Package() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Your Guide</p>
               <div className="grid gap-3">
                 {sections.map((s, i) => (
-                  <SectionCard key={s.id || i} section={s} defaultOpen={i === 0} />
+                  <SectionCard key={s.id || i} section={s} defaultOpen={i === 0} onExpand={trackSectionExpand} />
                 ))}
               </div>
             </>

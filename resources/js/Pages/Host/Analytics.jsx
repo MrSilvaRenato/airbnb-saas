@@ -84,8 +84,89 @@ function RevenueTable({ data }) {
     );
 }
 
+const SECTION_TYPE_COLOR = {
+    house_rule: 'bg-amber-400',
+    guide:      'bg-sky-400',
+    faq:        'bg-violet-400',
+    contact:    'bg-emerald-400',
+    info:       'bg-gray-400',
+    other:      'bg-gray-400',
+};
+
+function EngagementPanel({ engagement }) {
+    if (!engagement) return null;
+    const { open_rate_pct, total_opens, top_sections } = engagement;
+    const maxCount = Math.max(...(top_sections?.map(s => s.count) ?? [1]), 1);
+    const hasData  = total_opens > 0;
+
+    return (
+        <div className="rounded-2xl border bg-white p-5 md:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <div className="text-sm font-medium">Guide Engagement</div>
+                    <div className="text-xs text-gray-400 mt-0.5">Which sections guests actually read</div>
+                </div>
+                <div className="text-right">
+                    <div className="text-2xl font-semibold text-gray-900">{open_rate_pct}%</div>
+                    <div className="text-xs text-gray-400">guide open rate</div>
+                </div>
+            </div>
+
+            {!hasData ? (
+                <p className="text-sm text-gray-400 py-4 text-center">
+                    No engagement data yet — it will appear here once guests start reading their guides.
+                </p>
+            ) : (
+                <>
+                    {/* Open-rate bar */}
+                    <div className="mb-5">
+                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>{total_opens} stay{total_opens !== 1 ? 's' : ''} opened the guide</span>
+                            <span>{open_rate_pct}%</span>
+                        </div>
+                        <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div
+                                className="bg-indigo-500 h-2 rounded-full transition-all"
+                                style={{ width: `${open_rate_pct}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Top sections */}
+                    {top_sections?.length > 0 && (
+                        <>
+                            <div className="text-xs font-medium text-gray-500 mb-2">Most opened sections</div>
+                            <div className="space-y-2">
+                                {top_sections.map((s, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div
+                                            className={`w-2 h-2 rounded-full shrink-0 ${SECTION_TYPE_COLOR[s.type] ?? 'bg-gray-400'}`}
+                                        />
+                                        <div className="w-36 shrink-0 text-xs text-gray-600 truncate" title={s.title}>
+                                            {s.title}
+                                        </div>
+                                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                                            <div
+                                                className="bg-indigo-400 h-2 rounded-full transition-all"
+                                                style={{ width: `${Math.round((s.count / maxCount) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <div className="w-8 text-right text-xs font-medium text-gray-700">
+                                            {s.count}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
 export default function Analytics() {
-    const { userPlan, isPro, kpis, visitsByStay, visits7d, occupancy, revenueByMonth } = usePage().props;
+    const { userPlan, isPro, kpis, visitsByStay, visits7d, occupancy, revenueByMonth, engagement } = usePage().props;
 
     const maxVisits = Math.max(...(visitsByStay?.map(v => v.visits) ?? [1]), 1);
 
@@ -209,6 +290,9 @@ export default function Analytics() {
                         </Link>
                     </div>
                 )}
+
+                {/* Guide Engagement (Phase 2C) */}
+                <EngagementPanel engagement={engagement} />
             </div>
             </>
             )}

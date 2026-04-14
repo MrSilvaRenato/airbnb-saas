@@ -7,7 +7,9 @@ use Inertia\Inertia;
 use App\Models\Property;
 use App\Models\WelcomePackage;
 use App\Models\PackageVisit;
+use App\Models\EngagementEvent;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
@@ -106,6 +108,9 @@ class AnalyticsController extends Controller
             ? WelcomePackage::whereIn('property_id', $propertyIds)->sum('price_total')
             : null;
 
+        // --- Engagement stats (Phase 2C) ---
+        $engagement = $this->buildEngagementStats($packageIds, $totalStays);
+
         return Inertia::render('Host/Analytics', [
             'userPlan'       => $userPlan,
             'isPro'          => $isPro,
@@ -119,6 +124,49 @@ class AnalyticsController extends Controller
             'visits7d'       => $visits7d,
             'occupancy'      => $occupancy,
             'revenueByMonth' => $revenueByMonth,
+            'engagement'     => $engagement,
         ]);
+    }
+
+    private function buildEngagementStats($packageIds, int $totalStays): array
+    {
+        if ($packageIds->isEmpty()) {
+            return [
+                'open_rate_pct' => 0,
+                'total_opens'   => 0,
+                'top_sections'  => [],
+            ];
+        }
+
+        // Unique stays where a guest opened the guide
+        $totalOpens = EngagementEvent::whereIn('welcome_package_id', $packageIds)
+            ->where('event_type', 'guide_open')
+            ->distinct()
+            ->count('welcome_package_id');
+
+        $openRatePct = $totalStays > 0 ? round(($totalOpens / $totalStays) * 100) : 0;
+
+        // Top sections by unique guest expands (section_expand events)
+        $topSections = DB::table('engagement_events')
+            ->join('welcome_sections', 'engagement_events.welcome_section_id', '=', 'welcome_sections.id')
+            ->whereIn('engagement_events.welcome_package_id', $packageIds)
+            ->where('engagement_events.event_type', 'section_expand')
+            ->whereNotNull('engagement_events.welcome_section_id')
+            ->selectRaw('welcome_sections.title, welcome_sections.type, COUNT(DISTINCT engagement_events.session_token) as expand_count')
+            ->groupBy('welcome_sections.id', 'welcome_sections.title', 'welcome_sections.type')
+            ->orderByDesc('expand_count')
+            ->limit(8)
+            ->get()
+            ->map(fn($r) => [
+                'title' => $r->title,
+                'type'  => $r->type,
+                'count' => (int) $r->expand_count,
+            ]);
+
+        return [
+            'open_rate_pct' => $openRatePct,
+            'total_opens'   => $totalOpens,
+            'top_sections'  => $topSections,
+        ];
     }
 }

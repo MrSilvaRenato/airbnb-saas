@@ -27,6 +27,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\IcalFeedController;
 use App\Http\Controllers\MessageTemplateController;
 use App\Http\Controllers\UpsellOfferController;
+use App\Http\Controllers\EngagementController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -301,6 +302,9 @@ Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
 // Guest upsell — inquiry (no auth) and Stripe payment (no auth)
 Route::post('/upsells/{offer}/request', [UpsellOfferController::class, 'guestRequest'])->name('upsells.guest.request');
 Route::post('/upsells/{offer}/pay',     [UpsellOfferController::class, 'guestPay'])->name('upsells.guest.pay');
+
+// Guest engagement tracking (no auth — beacon from public package page)
+Route::post('/engagement/track', [EngagementController::class, 'track'])->name('engagement.track');
 
 
     
