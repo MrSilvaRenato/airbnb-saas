@@ -42,6 +42,17 @@ class BillingController extends Controller
 
         Stripe::setApiKey(config('stripe.secret'));
 
+        // If a customer ID is stored, verify it still exists in this Stripe environment.
+        // It may be a test-mode ID that doesn't exist in live mode (or was deleted).
+        if ($user->stripe_customer_id) {
+            try {
+                Customer::retrieve($user->stripe_customer_id);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                $user->stripe_customer_id = null;
+                $user->save();
+            }
+        }
+
         if (!$user->stripe_customer_id) {
             $customer = Customer::create([
                 'email' => $user->email,
@@ -270,6 +281,15 @@ public function success(Request $request)
         }
 
         // No existing subscription — start new checkout
+        if ($user->stripe_customer_id) {
+            try {
+                Customer::retrieve($user->stripe_customer_id);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                $user->stripe_customer_id = null;
+                $user->save();
+            }
+        }
+
         if (!$user->stripe_customer_id) {
             $customer = Customer::create(['email' => $user->email, 'name' => $user->name ?? 'Host']);
             $user->stripe_customer_id = $customer->id;
