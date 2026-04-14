@@ -69,6 +69,7 @@ class BillingController extends Controller
                 'price'    => $priceId,
                 'quantity' => 1,
             ]],
+            'metadata'    => ['plan' => $plan],
             'success_url' => route('host.dashboard', ['upgraded' => 1]),
             'cancel_url'  => route('checkout.show'),
         ]);

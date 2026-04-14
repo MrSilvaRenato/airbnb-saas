@@ -133,23 +133,31 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // Save subscription ID immediately
+        // Save subscription ID and activate plan immediately.
+        // Read the plan from metadata we set at checkout creation —
+        // no extra Stripe API call needed.
         if ($session->subscription) {
-            $user->stripe_subscription_id = $session->subscription;
-            $user->save();
+            $plan = $session->metadata->plan ?? null;
+            $validPlans = ['growth', 'pro', 'agency'];
 
-            // Retrieve the full subscription object and sync plan right away.
-            // This is the primary plan-update path — don't rely solely on
-            // customer.subscription.created arriving separately.
-            try {
-                \Stripe\Stripe::setApiKey(config('stripe.secret'));
-                $subscription = \Stripe\Subscription::retrieve($session->subscription);
-                $this->syncSubscriptionToUser($subscription);
-            } catch (\Throwable $e) {
-                Log::error('Stripe webhook: failed to sync subscription after checkout', [
-                    'subscription' => $session->subscription,
-                    'error'        => $e->getMessage(),
+            if ($plan && in_array($plan, $validPlans)) {
+                $user->plan                   = $plan;
+                $user->stripe_subscription_id = $session->subscription;
+                $user->stripe_status          = 'active';
+                if (!$user->subscription_started_at) {
+                    $user->subscription_started_at = now();
+                }
+                $user->save();
+
+                Log::info('Stripe webhook: plan activated via checkout.session.completed', [
+                    'user' => $user->id,
+                    'plan' => $plan,
                 ]);
+            } else {
+                // Fallback: just save subscription ID;
+                // customer.subscription.created will finish the sync
+                $user->stripe_subscription_id = $session->subscription;
+                $user->save();
             }
         }
 
