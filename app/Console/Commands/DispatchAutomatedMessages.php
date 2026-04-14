@@ -45,10 +45,10 @@ class DispatchAutomatedMessages extends Command
                 ->where('enabled', 1)
                 ->get();
 
-            if ($templates->isEmpty()) {
-                $this->warn("Package {$package->id} skipped: no enabled templates");
-                continue;
-            }
+         if ($templates->isEmpty()) {
+    $this->warn("Package {$package->id} skipped: no enabled templates for user {$user->id} ({$user->email})");
+    continue;
+}
 
             foreach ($templates as $template) {
                 if (!$this->isDue($template->trigger, $package, $now)) {
