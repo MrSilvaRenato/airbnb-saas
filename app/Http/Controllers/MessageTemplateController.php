@@ -12,6 +12,7 @@ class MessageTemplateController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        abort_unless(in_array($user->plan, ['host', 'growth', 'pro', 'agency']), 403);
 
         // Seed defaults if none exist yet
         $existing = MessageTemplate::where('user_id', $user->id)->get();

@@ -4,10 +4,21 @@ import axios from 'axios'
 import Shell from '@/Layouts/Shell'
 
 const PLAN = {
-    free: { label: 'Starter', price: 'Free',      color: 'bg-gray-100 text-gray-600' },
-    host: { label: 'Host',    price: 'A$19 / mo',  color: 'bg-indigo-100 text-indigo-700' },
-    pro:  { label: 'Pro',     price: 'A$49 / mo',  color: 'bg-emerald-100 text-emerald-700' },
+    free:   { label: 'Starter', price: 'Free',        color: 'bg-gray-100 text-gray-600' },
+    host:   { label: 'Growth',  price: 'A$29 / mo',   color: 'bg-indigo-100 text-indigo-700' }, // legacy
+    growth: { label: 'Growth',  price: 'A$29 / mo',   color: 'bg-indigo-100 text-indigo-700' },
+    pro:    { label: 'Pro',     price: 'A$79 / mo',   color: 'bg-emerald-100 text-emerald-700' },
+    agency: { label: 'Agency',  price: 'A$199 / mo',  color: 'bg-violet-100 text-violet-700' },
 }
+
+// Plans that can be upgraded to, in order
+const UPGRADE_OPTIONS = [
+    { key: 'growth', label: 'Growth plan', desc: 'Up to 5 properties · iCal · Messaging · Upsells · Branding · Analytics', price: 'A$29/mo', color: 'border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50', priceColor: 'text-indigo-600' },
+    { key: 'pro',    label: 'Pro plan',    desc: 'Unlimited properties · Maintenance · Full analytics · CSV export',         price: 'A$79/mo', color: 'border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50', priceColor: 'text-emerald-600' },
+    { key: 'agency', label: 'Agency plan', desc: 'Everything in Pro · White-label guest pages · Priority support',            price: 'A$199/mo', color: 'border-violet-200 hover:border-violet-400 hover:bg-violet-50', priceColor: 'text-violet-600' },
+]
+
+const PLAN_RANK = { free: 0, host: 1, growth: 1, pro: 2, agency: 3 }
 
 function Modal({ title, children, onClose }) {
     return (
@@ -26,7 +37,7 @@ function Modal({ title, children, onClose }) {
 export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, hasStripeCustomer, hasStripeSubscription, canRequestRefund, pendingRefund, daysSubscribed, checkoutRoute, portalRoute }) {
     const { flash = {} } = usePage().props
     const meta = PLAN[plan] ?? PLAN.free
-    const isPaid = plan === 'host' || plan === 'pro'
+    const isPaid = ['host', 'growth', 'pro', 'agency'].includes(plan)
     const isCancelling = !!planEndsAt
 
     const [modal, setModal] = useState(null) // 'cancel' | 'refund' | 'upgrade'
@@ -110,12 +121,16 @@ export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, h
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
 
                     {/* Upgrade */}
-                    {plan !== 'pro' && (
+                    {plan !== 'agency' && (
                         <div className="p-5 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-sm font-semibold text-gray-900">Upgrade plan</div>
                                 <div className="text-xs text-gray-400 mt-0.5">
-                                    {plan === 'free' ? 'Unlock branding, analytics and more.' : 'Move to Pro — unlimited properties + full analytics.'}
+                                    {plan === 'free'
+                                        ? 'Unlock iCal sync, messaging, upsells, branding, and analytics.'
+                                        : (plan === 'growth' || plan === 'host')
+                                            ? 'Move to Pro — unlimited properties, maintenance tracking, and full analytics.'
+                                            : 'Move to Agency — white-label guest pages and priority support.'}
                                 </div>
                             </div>
                             <button onClick={() => setModal('upgrade')}
@@ -244,30 +259,20 @@ export default function Manage({ plan, stripeStatus, planRenewsAt, planEndsAt, h
                 <Modal title="Upgrade your plan" onClose={() => setModal(null)}>
                     <p className="text-sm text-gray-500 mb-4">
                         {hasStripeCustomer
-                            ? 'Your subscription will be updated immediately. You\'ll be charged a prorated amount for the remainder of this billing cycle.'
+                            ? "Your subscription will be updated immediately. You'll be charged a prorated amount for the remainder of this billing cycle."
                             : 'Choose a plan to get started.'}
                     </p>
                     <div className="space-y-3">
-                        {plan !== 'host' && (
-                            <button onClick={() => upgradeTo('host')} disabled={submitting}
-                                className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 transition disabled:opacity-50">
+                        {UPGRADE_OPTIONS.filter(o => PLAN_RANK[o.key] > PLAN_RANK[plan]).map(o => (
+                            <button key={o.key} onClick={() => upgradeTo(o.key)} disabled={submitting}
+                                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border-2 transition disabled:opacity-50 ${o.color}`}>
                                 <div className="text-left">
-                                    <div className="font-semibold text-gray-900">Host plan</div>
-                                    <div className="text-xs text-gray-400">5 properties · Branding · Analytics</div>
+                                    <div className="font-semibold text-gray-900">{o.label}</div>
+                                    <div className="text-xs text-gray-400">{o.desc}</div>
                                 </div>
-                                <div className="text-indigo-600 font-bold">A$19/mo</div>
+                                <div className={`font-bold shrink-0 ml-3 ${o.priceColor}`}>{o.price}</div>
                             </button>
-                        )}
-                        {plan !== 'pro' && (
-                            <button onClick={() => upgradeTo('pro')} disabled={submitting}
-                                className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 transition disabled:opacity-50">
-                                <div className="text-left">
-                                    <div className="font-semibold text-gray-900">Pro plan</div>
-                                    <div className="text-xs text-gray-400">Unlimited · Maintenance · Auto-emails</div>
-                                </div>
-                                <div className="text-emerald-600 font-bold">A$49/mo</div>
-                            </button>
-                        )}
+                        ))}
                     </div>
                 </Modal>
             )}

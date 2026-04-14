@@ -47,7 +47,7 @@ class PropertyController extends Controller
             'default_checkout_list'     => 'nullable|string',
         ]);
 
-        $isPro = in_array($request->user()->plan ?? 'free', ['host', 'pro']);
+        $isPro = in_array($request->user()->plan ?? 'free', ['host', 'growth', 'pro', 'agency']);
 
         // build data for insertion
         $dataToCreate = [
@@ -194,7 +194,7 @@ class PropertyController extends Controller
         'default_checkout_list'     => 'nullable|string',
     ]);
 
-    $isPro = ($request->user()->plan ?? 'free') === 'pro';
+    $isPro = in_array($request->user()->plan ?? 'free', ['host', 'growth', 'pro', 'agency']);
 
     // Core info
     $property->title          = $validated['title'];

@@ -87,7 +87,7 @@ function IcalSection({ property, feed }) {
 
 export default function Edit() {
     const { property, userMeta, icalFeed, errors = {} } = usePage().props
-    const isPro = userMeta?.plan === 'pro'
+    const isPro = ['host', 'growth', 'pro', 'agency'].includes(userMeta?.plan)
 
     const { data, setData, post, processing } = useForm({
         _method: 'put',
