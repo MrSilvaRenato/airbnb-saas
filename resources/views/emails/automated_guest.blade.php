@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>{{ $message->subject }}</title>
+<title>{{ $msg->subject }}</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; margin: 0; padding: 0; }
   .wrapper { max-width: 520px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
@@ -25,10 +25,10 @@
     <p>Automated guest communication</p>
   </div>
   <div class="body">
-    <p class="text">{{ $message->body }}</p>
-    @if($message->package && $message->package->slug)
+    <p class="text">{{ $msg->body }}</p>
+    @if($msg->package && $msg->package->slug)
     <div class="cta">
-      <a href="{{ url('/p/' . $message->package->slug) }}" class="btn">Open Welcome Guide →</a>
+      <a href="{{ url('/p/' . $msg->package->slug) }}" class="btn">Open Welcome Guide →</a>
     </div>
     @endif
   </div>

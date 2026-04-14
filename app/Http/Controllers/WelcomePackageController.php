@@ -835,8 +835,16 @@ public function update(Request $r, WelcomePackage $package)
         ['guest' => $package->guest_first_name]
     );
 
-    // Re-schedule automated messages (dates or email may have changed)
-    try { (new MessageScheduler)->scheduleForPackage($package); } catch (\Throwable) {}
+    // If stay was cancelled, cancel pending messages; otherwise reschedule
+    // (reschedule handles date/email changes via updateOrCreate)
+    $scheduler = new MessageScheduler;
+    try {
+        if ($package->status === 'cancelled') {
+            $scheduler->cancelForPackage($package);
+        } else {
+            $scheduler->scheduleForPackage($package);
+        }
+    } catch (\Throwable) {}
 
     return back()->with('success', 'Stay details updated.');
 }
@@ -865,9 +873,11 @@ public function update(Request $r, WelcomePackage $package)
         'check_out'     => $package->check_out_date,
     ];
 
+    // Cancel any pending scheduled messages before deleting
+    try { (new MessageScheduler)->cancelForPackage($package); } catch (\Throwable) {}
+
     // delete ONCE
     $package->delete();
-
 
         // destroy()
             Activity::record($request->user(), null, 'deleted', 'Package Deleted', [

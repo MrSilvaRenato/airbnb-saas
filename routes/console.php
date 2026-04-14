@@ -14,5 +14,8 @@ Schedule::command('hostflows:send-guest-links')->dailyAt('22:00');
 // Sync all iCal feeds every 15 minutes
 Schedule::command('ical:sync')->everyFifteenMinutes();
 
-// Send scheduled guest messages (check every minute)
-Schedule::job(new \App\Jobs\SendScheduledMessages)->everyMinute();
+// Send scheduled guest messages every minute — runs handle() directly so no
+// separate queue worker is required; withoutOverlapping prevents pile-up.
+Schedule::call(function () {
+    (new \App\Jobs\SendScheduledMessages)->handle();
+})->everyMinute()->name('send-scheduled-messages')->withoutOverlapping();
