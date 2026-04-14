@@ -572,25 +572,25 @@ const IconBroom = () => (
     const planMap = {
       free: {
         label: 'FREE',
-        className: 'bg-gray-200 text-gray-800',
+        className: 'shrink-0 text-right space-y-2 min-w-[220px]',
         action: 'Upgrade',
         href: route('checkout.show'),
       },
       growth: {
         label: 'GROWTH',
-        className: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white',
+        className: 'inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm',
         action: 'Billing',
         href: route('billing.manage'),
       },
       pro: {
         label: 'PRO',
-        className: 'bg-gradient-to-r from-emerald-500 to-emerald-700 text-white',
+        className: 'inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm',
         action: 'Billing',
         href: route('billing.manage'),
       },
       agency: {
         label: 'AGENCY',
-        className: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white',
+        className: 'inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm',
         action: 'Billing',
         href: route('billing.manage'),
       },
