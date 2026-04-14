@@ -15,6 +15,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\ExportController;
 // Middleware
@@ -23,6 +24,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ChatBotController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\MessagingTemplateController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -81,7 +83,7 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 Route::get('/dashboard', function () {
     $u = auth()->user();
     if (! $u) {
-        return redirect()->route('Landing');
+        return redirect()->route('landing');
     }
 
     if (in_array($u->role, ['host', 'admin'])) {
@@ -96,6 +98,15 @@ Route::get('/dashboard', function () {
     // unexpected role
     abort(403);
 })->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    // Accept both PATCH and POST for multipart profile submissions (method-spoof fallback).
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [ProfileController::class, 'update']);
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
 
 /*
@@ -122,6 +133,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/host/analytics', [AnalyticsController::class, 'index'])
         ->name('host.analytics');
+
+    Route::get('/messaging/templates', [MessagingTemplateController::class, 'index'])->name('messaging.templates');
+    Route::get('/messaging/templates/{template}/edit', [MessagingTemplateController::class, 'edit'])->name('messaging.templates.edit');
+    Route::put('/messaging/templates/{template}', [MessagingTemplateController::class, 'update'])->name('messaging.templates.update');
+
 
     Route::get('/host/calendar', [CalendarController::class, 'index'])
         ->name('host.calendar');

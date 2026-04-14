@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Send guest welcome emails to guests checking in today (08:00 AEST = 22:00 UTC)
-Schedule::command('hostflows:send-guest-links')->dailyAt('22:00');
+Schedule::command('hostflows:dispatch-automated-messages')->everyFiveMinutes();

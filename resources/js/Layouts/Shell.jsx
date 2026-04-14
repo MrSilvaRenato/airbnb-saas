@@ -75,6 +75,7 @@ export default function Shell({ title, children, right = null }) {
                     </span>
                   </NavLink>
                   <NavLink href="/host/analytics">Analytics</NavLink>
+                  <NavLink href="/messaging/templates">Messages</NavLink>
                   {user.plan === 'pro' && <NavLink href="/host/maintenance">Maintenance</NavLink>}
                   <NavLink href="/billing/manage">
                     <span className="flex items-center gap-1">
