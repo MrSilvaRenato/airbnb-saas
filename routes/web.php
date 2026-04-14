@@ -15,7 +15,6 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\ExportController;
 // Middleware
