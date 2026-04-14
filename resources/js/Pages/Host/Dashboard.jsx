@@ -474,7 +474,7 @@ const IconBroom = () => (
              ? 'Everything is unlocked. Enjoy white-label guest pages, unlimited properties, full analytics, maintenance tracking, and priority support.'
 : currentPlan === 'pro'
 ? 'Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.'
-: 'Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.'
+: 'Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.'}
           </div>
           <div className="text-emerald-700">{upgradedMsg}</div>
         </div>
