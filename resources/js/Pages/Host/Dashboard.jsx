@@ -562,11 +562,11 @@ const IconBroom = () => (
               </div>
             )}
           </div>
-{/* Right: plan badge */} {/* Right: plan + setup */} <div className="shrink-0 text-right space-y-2 min-w-[220px]"> {userMeta?.plan === "pro" ? ( <div className="inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm"> PRO • Unlimited </div> ) : ( <div className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 shadow-sm"> FREE <Link href={route('checkout.show')} className="underline hover:text-gray-900"> Upgrade </Link> </div> )}
+// {/* Right: plan badge */} {/* Right: plan + setup */} <div className="shrink-0 text-right space-y-2 min-w-[220px]"> {userMeta?.plan === "pro" ? ( <div className="inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm"> PRO • Unlimited </div> ) : ( <div className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 shadow-sm"> FREE <Link href={route('checkout.show')} className="underline hover:text-gray-900"> Upgrade </Link> </div> )}
 
-PLAN LABEL
+{/* PLAN LABEL */}
             
-  {/* <div className="shrink-0 text-right space-y-2 min-w-[220px]">
+   <div className="shrink-0 text-right space-y-2 min-w-[220px]">
   {(() => {
     const plan = (userMeta?.plan || 'free').toLowerCase();
 
@@ -613,7 +613,7 @@ PLAN LABEL
       </div>
     );
   })()}
-</div> */}
+</div> 
 
   {/* Setup progress */}
   <div className="text-[11px] text-gray-600">Setup {setupPercent}% complete</div>
