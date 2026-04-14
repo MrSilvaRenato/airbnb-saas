@@ -54,7 +54,8 @@ Route::middleware('auth')->group(function () {
 Route::get('/messaging/templates/{template}/edit', [MessageTemplateController::class, 'edit'])->name('messaging.templates.edit');
 Route::put('/messaging/templates/{template}', [MessageTemplateController::class, 'update'])->name('messaging.templates.update');
 Route::delete('/messaging/templates/{template}', [MessageTemplateController::class, 'destroy'])->name('messaging.templates.destroy');
-
+Route::get('/messaging/templates/{template}/edit', [MessageTemplateController::class, 'edit'])->name('messaging.templates.edit');
+    
     // Upsell offers (host management)
     Route::get('/host/properties/{property}/upsells',        [UpsellOfferController::class, 'index'])->name('upsells.index');
     Route::post('/host/properties/{property}/upsells',       [UpsellOfferController::class, 'store'])->name('upsells.store');
