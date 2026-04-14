@@ -154,7 +154,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', EnsureHost::class])->group(function () {
-
+Route::get('/host/dashboard', [HostDashboardController::class, 'index'])
+    ->name('host.dashboard');
 
     Route::get('/host/calendar', [CalendarController::class, 'index'])
         ->name('host.calendar');
