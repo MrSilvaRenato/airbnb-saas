@@ -498,141 +498,144 @@ const IconBroom = () => (
         </div>
       ) : null}
 
-      {/* === NEW HEADER BLOCK === */}
-      <div className="mb-6 rounded-2xl border bg-white p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          {/* Left: greeting + next check-in */}
-          <div className="min-w-0">
-            <div className="text-lg font-semibold text-gray-900">
-              Welcome back, {firstName} 👋
-            </div>
-
-            {nextInfo ? (
-              <div className="mt-1 text-sm text-gray-700 flex flex-wrap items-center gap-2">
-                <span className="truncate">
-                  {nextInfo.isOngoing ? "Guest in house now:" : "Next check-in:"}{" "}
-                  <strong>
-                    {nextInfo.pkg.guest_first_name || "Guest"}
-                    {nextInfo.pkg.guest_count ? ` (${nextInfo.pkg.guest_count})` : ""}
-                  </strong>{" "}
-                  at <strong>{nextInfo.propertyTitle}</strong>{" "}
-                  • {fmtDate(nextInfo.pkg.check_in_date)} → {fmtDate(nextInfo.pkg.check_out_date)}
-                </span>
-
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full border ${toneClass(
-                    nextInfo.status.tone
-                  )}`}
-                >
-                  {nextInfo.status.label}
-                </span>
-
-                <button
-                  className="ml-1 inline-flex items-center rounded-md bg-black text-white text-xs font-medium px-2.5 py-1 hover:bg-gray-800"
-                  onClick={() => {
-                    setSharePkg(nextInfo.pkg);
-                    setSharePropertyTitle(nextInfo.propertyTitle);
-                  }}
-                >
-                  Send guest link
-                </button>
-              </div>
-            ) : (
-              <div className="mt-1 text-sm text-gray-600">
-                No upcoming stays.{" "}
-                {items.length ? (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() => {
-                      if (!limits?.canCreateStay) return;
-                      router.visit(route("packages.create", items[0].id));
-                    }}
-                  >
-                    Create your next stay
-                  </button>
-                ) : (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() => router.visit(route("properties.create"))}
-                  >
-                    Add your first property
-                  </button>
-                )}
-                .
-              </div>
-            )}
-     
-
-{/* PLAN LABEL */}
-            
-  <div className="shrink-0 text-right space-y-2 min-w-[220px]">
-  {(() => {
-    const plan = (userMeta?.plan || 'free').toLowerCase();
-
-    const planMap = {
-      free: {
-        label: 'FREE',
-        className: 'shrink-0 text-right space-y-2 min-w-[220px]',
-        action: 'Upgrade',
-        href: route('checkout.show'),
-      },
-      growth: {
-        label: 'GROWTH',
-        className: 'inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm',
-        action: 'Billing',
-        href: route('billing.manage'),
-      },
-      pro: {
-        label: 'PRO',
-        className: 'inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm',
-        action: 'Billing',
-        href: route('billing.manage'),
-      },
-      agency: {
-        label: 'AGENCY',
-        className: 'inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm',
-        action: 'Billing',
-        href: route('billing.manage'),
-      },
-    };
-
-    const current = planMap[plan] || planMap.free;
-
-    return (
-      <div
-        className={`inline-flex items-center gap-3 rounded-full text-xs font-semibold px-3 py-1.5 
-        ${plan !== 'free' ? 'shadow-md ring-1 ring-black/5' : 'shadow-sm'} ${current.className}`}
-      >
-        <span className="tracking-wide">{current.label}</span>
-
-        <Link
-          href={current.href}
-          className={
-            plan === 'free'
-              ? 'underline hover:opacity-80'
-              : 'hover:opacity-80'
-          }
-        >
-          {current.action}
-        </Link>
+   {/* === NEW HEADER BLOCK === */}
+<div className="mb-6 rounded-2xl border bg-white p-5">
+  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    {/* Left: greeting + next check-in + progress */}
+    <div className="min-w-0 flex-1">
+      <div className="text-lg font-semibold text-gray-900">
+        Welcome back, {firstName} 👋
       </div>
-    );
-  })()}
-</div>
 
-  {/* Setup progress */}
-  <div className="text-[11px] text-gray-600">Setup {setupPercent}% complete</div>
-  <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-    <div
-      className="h-full bg-gray-900 transition-all"
-      style={{ width: `${setupPercent}%` }}
-    />
-  </div>
-</div>
-  
+      {nextInfo ? (
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-700">
+          <span className="truncate">
+            {nextInfo.isOngoing ? "Guest in house now:" : "Next check-in:"}{" "}
+            <strong>
+              {nextInfo.pkg.guest_first_name || "Guest"}
+              {nextInfo.pkg.guest_count ? ` (${nextInfo.pkg.guest_count})` : ""}
+            </strong>{" "}
+            at <strong>{nextInfo.propertyTitle}</strong>{" "}
+            • {fmtDate(nextInfo.pkg.check_in_date)} → {fmtDate(nextInfo.pkg.check_out_date)}
+          </span>
+
+          <span
+            className={`text-[10px] rounded-full border px-2 py-0.5 ${toneClass(
+              nextInfo.status.tone
+            )}`}
+          >
+            {nextInfo.status.label}
+          </span>
+
+          <button
+            className="ml-1 inline-flex items-center rounded-md bg-black px-2.5 py-1 text-xs font-medium text-white hover:bg-gray-800"
+            onClick={() => {
+              setSharePkg(nextInfo.pkg);
+              setSharePropertyTitle(nextInfo.propertyTitle);
+            }}
+          >
+            Send guest link
+          </button>
+        </div>
+      ) : (
+        <div className="mt-1 text-sm text-gray-600">
+          No upcoming stays.{" "}
+          {items.length ? (
+            <button
+              className="underline underline-offset-2"
+              onClick={() => {
+                if (!limits?.canCreateStay) return;
+                router.visit(route("packages.create", items[0].id));
+              }}
+            >
+              Create your next stay
+            </button>
+          ) : (
+            <button
+              className="underline underline-offset-2"
+              onClick={() => router.visit(route("properties.create"))}
+            >
+              Add your first property
+            </button>
+          )}
+          .
+        </div>
+      )}
+
+      {/* Setup progress */}
+      <div className="mt-4">
+        <div className="text-[11px] text-gray-600">
+          Setup {setupPercent}% complete
+        </div>
+        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div
+            className="h-full bg-gray-900 transition-all"
+            style={{ width: `${setupPercent}%` }}
+          />
         </div>
       </div>
-      {/* === END HEADER BLOCK === */}
+    </div>
+
+    {/* Right: plan label */}
+    <div className="shrink-0 min-w-[220px] text-left md:text-right">
+      {(() => {
+        const plan = (userMeta?.plan || "free").toLowerCase();
+
+        const planMap = {
+          free: {
+            label: "FREE",
+            className: "bg-gray-100 text-gray-700 ring-1 ring-gray-200",
+            action: "Upgrade",
+            href: route("checkout.show"),
+          },
+          growth: {
+            label: "GROWTH",
+            className:
+              "bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 text-stone-900 ring-1 ring-amber-200/60 shadow-md",
+            action: "Billing",
+            href: route("billing.manage"),
+          },
+          pro: {
+            label: "PRO",
+            className:
+              "bg-gradient-to-r from-yellow-200 via-amber-400 to-yellow-500 text-stone-900 ring-1 ring-amber-200/70 shadow-md",
+            action: "Billing",
+            href: route("billing.manage"),
+          },
+          agency: {
+            label: "AGENCY",
+            className:
+              "bg-gradient-to-r from-stone-900 via-amber-500 to-stone-800 text-white ring-1 ring-amber-300/40 shadow-md",
+            action: "Billing",
+            href: route("billing.manage"),
+          },
+        };
+
+        const current = planMap[plan] || planMap.free;
+
+        return (
+          <div
+            className={`inline-flex items-center gap-3 rounded-full px-3 py-1.5 text-xs font-semibold ${current.className}`}
+          >
+            <span className="tracking-[0.12em]">{current.label}</span>
+
+            <Link
+              href={current.href}
+              className={
+                plan === "free"
+                  ? "underline underline-offset-2 hover:opacity-80"
+                  : "hover:opacity-80"
+              }
+            >
+              {current.action}
+            </Link>
+          </div>
+        );
+      })()}
+    </div>
+  </div>
+</div>
+{/* === END HEADER BLOCK === */}
 
       {/* Filters + KPI row */}
       <div className="rounded-2xl border bg-white p-4 mb-1">
