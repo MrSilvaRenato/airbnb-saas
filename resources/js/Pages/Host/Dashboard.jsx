@@ -476,6 +476,7 @@ const IconBroom = () => (
               ? ‘Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.’
               : ‘Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.’}
           </div>
+          <div className="text-emerald-700">{upgradedMsg}</div>
         </div>
       ) : showUpgradeBanner ? (
         <div className="rounded-2xl border border-yellow-400 bg-yellow-50 p-4 mb-4 text-sm">

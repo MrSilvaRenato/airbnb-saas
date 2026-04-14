@@ -13,11 +13,13 @@ class AutomatedGuestMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public ScheduledMessage $message) {}
+    // NOTE: Do NOT name this $message — that conflicts with Laravel's
+    // internal $message variable available in Blade mail views.
+    public function __construct(public ScheduledMessage $msg) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->message->subject);
+        return new Envelope(subject: $this->msg->subject);
     }
 
     public function content(): Content
