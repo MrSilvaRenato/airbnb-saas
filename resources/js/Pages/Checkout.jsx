@@ -76,6 +76,26 @@ const PLANS = [
             { label: "Maintenance tracking", ok: true },
         ],
     },
+    {
+        key: "agency",
+        name: "Agency",
+        price: 199,
+        pitch: "For agencies and managers running large portfolios or client properties.",
+        features: [
+            { label: "Unlimited properties", ok: true },
+            { label: "Unlimited active stays", ok: true },
+            { label: "Guest welcome page + QR code", ok: true },
+            { label: "Wi-Fi, lock code & house rules", ok: true },
+            { label: "iCal sync (Airbnb / VRBO)", ok: true },
+            { label: "Automated guest messaging", ok: true },
+            { label: "Guest upsell engine", ok: true },
+            { label: "Custom branding (logo + header)", ok: true },
+            { label: "Analytics dashboard — full", ok: true },
+            { label: "Maintenance tracking", ok: true },
+            { label: "White-label guest pages", ok: true },
+            { label: "Priority support", ok: true },
+        ],
+    },
 ];
 
 const TESTIMONIALS = [
@@ -159,7 +179,7 @@ export default function Checkout({ userPlan, checkoutRoute }) {
                     )}
 
                     {/* Plan cards */}
-                    <div className="grid gap-5 md:grid-cols-3 items-stretch">
+                    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4 items-stretch">
                         {PLANS.map((plan) => {
                             const isCurrent = userPlan === plan.key
 
