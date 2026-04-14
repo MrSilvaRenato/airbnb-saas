@@ -41,8 +41,27 @@ Route::get('/', fn() => Inertia::render('Landing'))->name('landing');
 Route::get('/login',    fn() => redirect()->route('landing', ['login'    => 1]))->name('login');
 Route::get('/register', fn() => redirect()->route('landing', ['register' => 1]))->name('register');
 
-// Breeze auth scaffolding (POST /login, POST /register, logout, password reset, etc.)
-require __DIR__ . '/auth.php';
+// Profile
+Route::middleware('auth')->group(function () {
+    Route::get('/profile',        [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit',   [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile',       [ProfileController::class, 'update']);           // method spoofing via _method=PATCH
+    Route::patch('/profile',      [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile',     [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Automated messaging templates
+  Route::get('/messaging/templates', [MessageTemplateController::class, 'index'])->name('messaging.templates');
+Route::get('/messaging/templates/{template}/edit', [MessageTemplateController::class, 'edit'])->name('messaging.templates.edit');
+Route::put('/messaging/templates/{template}', [MessageTemplateController::class, 'update'])->name('messaging.templates.update');
+Route::delete('/messaging/templates/{template}', [MessageTemplateController::class, 'destroy'])->name('messaging.templates.destroy');
+
+    // Upsell offers (host management)
+    Route::get('/host/properties/{property}/upsells',        [UpsellOfferController::class, 'index'])->name('upsells.index');
+    Route::post('/host/properties/{property}/upsells',       [UpsellOfferController::class, 'store'])->name('upsells.store');
+    Route::patch('/host/upsells/{offer}',                    [UpsellOfferController::class, 'update'])->name('upsells.update');
+    Route::delete('/host/upsells/{offer}',                   [UpsellOfferController::class, 'destroy'])->name('upsells.destroy');
+    Route::patch('/host/upsell-requests/{upsellRequest}',    [UpsellOfferController::class, 'updateRequest'])->name('upsells.requests.update');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -136,8 +155,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 */
 Route::middleware(['auth', EnsureHost::class])->group(function () {
 
-    // Dashboard
-    Route::get('/host/dashboard', [HostDashboardController::class, 'index'])->name('host.dashboard');
+
+    Route::get('/host/calendar', [CalendarController::class, 'index'])
+        ->name('host.calendar');
 
     // Onboarding
     Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
