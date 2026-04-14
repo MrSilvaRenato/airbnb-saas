@@ -563,21 +563,54 @@ const IconBroom = () => (
             )}
           </div>
 
-          {/* Right: plan badge */}
-     {/* Right: plan + setup */}
-<div className="shrink-0 text-right space-y-2 min-w-[220px]">
-  {userMeta?.plan === "pro" ? (
-    <div className="inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm">
-      PRO • Unlimited
-    </div>
-  ) : (
-    <div className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 shadow-sm">
-      FREE
-      <Link href={route('checkout.show')} className="underline hover:text-gray-900">
-        Upgrade
-      </Link>
-    </div>
-  )}
+  <div className="shrink-0 text-right space-y-2 min-w-[220px]">
+  {(() => {
+    const plan = (userMeta?.plan || 'free').toLowerCase();
+
+    const planMap = {
+      free: {
+        label: 'FREE',
+        className: 'bg-gray-200 text-gray-800',
+        action: 'Upgrade',
+        href: route('checkout.show'),
+      },
+      growth: {
+        label: 'GROWTH',
+        className: 'bg-blue-600 text-white',
+        action: 'Billing',
+        href: route('billing'),
+      },
+      pro: {
+        label: 'PRO',
+        className: 'bg-emerald-600 text-white',
+        action: 'Billing',
+        href: route('billing'),
+      },
+      agency: {
+        label: 'AGENCY',
+        className: 'bg-purple-600 text-white',
+        action: 'Billing',
+        href: route('billing'),
+      },
+    };
+
+    const current = planMap[plan] || planMap.free;
+
+    return (
+      <div
+        className={`inline-flex items-center gap-2 rounded-full text-xs font-semibold px-3 py-1.5 shadow-sm ${current.className}`}
+      >
+        {current.label}
+        <Link
+          href={current.href}
+          className="underline hover:opacity-80"
+        >
+          {current.action}
+        </Link>
+      </div>
+    );
+  })()}
+</div>
 
   {/* Setup progress */}
   <div className="text-[11px] text-gray-600">Setup {setupPercent}% complete</div>
