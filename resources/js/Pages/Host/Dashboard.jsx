@@ -580,19 +580,19 @@ const IconBroom = () => (
         label: 'GROWTH',
         className: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white',
         action: 'Billing',
-        href: route('billing'),
+        href: route('billing.manage'),
       },
       pro: {
         label: 'PRO',
         className: 'bg-gradient-to-r from-emerald-500 to-emerald-700 text-white',
         action: 'Billing',
-        href: route('billing'),
+        href: route('billing.manage'),
       },
       agency: {
         label: 'AGENCY',
         className: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white',
         action: 'Billing',
-        href: route('billing'),
+        href: route('billing.manage'),
       },
     };
 
