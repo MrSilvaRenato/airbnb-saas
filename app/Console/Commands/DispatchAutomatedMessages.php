@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\MessageTemplate;
 use App\Models\WelcomePackage;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -41,8 +40,9 @@ class DispatchAutomatedMessages extends Command
                 continue;
             }
 
-            $templates = MessageTemplate::where('user_id', $user->id)
-                ->where('is_enabled', true)
+            $templates = DB::table('scheduled_messages')
+                ->where('user_id', $user->id)
+                ->where('enabled', 1)
                 ->get();
 
             if ($templates->isEmpty()) {
@@ -51,18 +51,8 @@ class DispatchAutomatedMessages extends Command
             }
 
             foreach ($templates as $template) {
-                if (!$this->isDue($template->key, $package, $now)) {
-                    $this->warn("Package {$package->id} skipped: template {$template->key} not due");
-                    continue;
-                }
-
-                $alreadySent = DB::table('automated_message_logs')
-                    ->where('package_id', $package->id)
-                    ->where('template_id', $template->id)
-                    ->exists();
-
-                if ($alreadySent) {
-                    $this->warn("Package {$package->id} skipped: template {$template->key} already sent");
+                if (!$this->isDue($template->trigger, $package, $now)) {
+                    $this->warn("Package {$package->id} skipped: template {$template->trigger} not due");
                     continue;
                 }
 
@@ -74,28 +64,10 @@ class DispatchAutomatedMessages extends Command
                         $message->to($package->guest_email)->subject($subject);
                     });
 
-                    DB::table('automated_message_logs')->insert([
-                        'package_id' => $package->id,
-                        'template_id' => $template->id,
-                        'sent_at' => now(),
-                        'status' => 'sent',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-
-                    $this->info("Sent {$template->key} to {$package->guest_email} for package {$package->id}");
+                    $this->info("Sent {$template->trigger} to {$package->guest_email} for package {$package->id}");
                     $sent++;
                 } catch (\Throwable $e) {
-                    DB::table('automated_message_logs')->insert([
-                        'package_id' => $package->id,
-                        'template_id' => $template->id,
-                        'status' => 'failed',
-                        'error' => mb_substr($e->getMessage(), 0, 1000),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-
-                    $this->error("Failed {$template->key} for package {$package->id}: {$e->getMessage()}");
+                    $this->error("Failed {$template->trigger} for package {$package->id}: {$e->getMessage()}");
                 }
             }
         }
@@ -105,12 +77,12 @@ class DispatchAutomatedMessages extends Command
         return self::SUCCESS;
     }
 
-    private function isDue(string $key, WelcomePackage $package, Carbon $now): bool
+    private function isDue(string $trigger, WelcomePackage $package, Carbon $now): bool
     {
         $checkIn = Carbon::parse($package->check_in_date);
         $checkOut = Carbon::parse($package->check_out_date);
 
-        return match ($key) {
+        return match ($trigger) {
             'booking_confirmed' => $package->created_at && $package->created_at->lte($now->copy()->subMinutes(2)),
             'checkin_reminder' => $checkIn->isSameDay($now->copy()->addDays(2)),
             'checkin_day' => $checkIn->isSameDay($now),
@@ -125,10 +97,14 @@ class DispatchAutomatedMessages extends Command
 
         $pairs = [
             '{{guest_first_name}}' => $package->guest_first_name ?: 'Guest',
+            '{{guest_name}}' => $package->guest_first_name ?: 'Guest',
             '{{property}}' => $package->property?->title ?: 'your stay',
             '{{check_in_date}}' => (string) $package->check_in_date,
             '{{check_out_date}}' => (string) $package->check_out_date,
+            '{{checkin}}' => (string) $package->check_in_date,
+            '{{checkout}}' => (string) $package->check_out_date,
             '{{welcome_url}}' => route('public.package', $package->slug),
+            '{{link}}' => route('public.package', $package->slug),
             '{{host_name}}' => $host?->name ?: 'Host',
         ];
 
