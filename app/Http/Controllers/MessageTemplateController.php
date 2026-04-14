@@ -56,6 +56,26 @@ class MessageTemplateController extends Controller
         return back()->with('success', 'Template saved.');
     }
 
+    public function edit(Request $request, MessageTemplate $template)
+{
+    abort_if($template->user_id !== $request->user()->id, 403);
+
+    $properties = Property::where('user_id', $request->user()->id)->get(['id', 'title']);
+
+    return Inertia::render('Host/Messaging/EditTemplate', [
+        'template' => [
+            'id' => $template->id,
+            'trigger' => $template->trigger,
+            'property_id' => $template->property_id,
+            'send_offset_hours' => $template->send_offset_hours,
+            'subject' => $template->subject,
+            'body' => $template->body,
+            'enabled' => (bool) $template->enabled,
+        ],
+        'properties' => $properties,
+    ]);
+}
+
     public function destroy(Request $request, MessageTemplate $template)
     {
         abort_if($template->user_id !== $request->user()->id, 403);
