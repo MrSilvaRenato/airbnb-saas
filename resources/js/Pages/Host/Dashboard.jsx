@@ -562,11 +562,10 @@ const IconBroom = () => (
               </div>
             )}
           </div>
-// {/* Right: plan badge */} {/* Right: plan + setup */} <div className="shrink-0 text-right space-y-2 min-w-[220px]"> {userMeta?.plan === "pro" ? ( <div className="inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm"> PRO • Unlimited </div> ) : ( <div className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 shadow-sm"> FREE <Link href={route('checkout.show')} className="underline hover:text-gray-900"> Upgrade </Link> </div> )}
 
 {/* PLAN LABEL */}
             
-   <div className="shrink-0 text-right space-y-2 min-w-[220px]">
+  <div className="shrink-0 text-right space-y-2 min-w-[220px]">
   {(() => {
     const plan = (userMeta?.plan || 'free').toLowerCase();
 
@@ -579,19 +578,19 @@ const IconBroom = () => (
       },
       growth: {
         label: 'GROWTH',
-        className: 'bg-blue-600 text-white',
+        className: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white',
         action: 'Billing',
         href: route('billing'),
       },
       pro: {
         label: 'PRO',
-        className: 'bg-emerald-600 text-white',
+        className: 'bg-gradient-to-r from-emerald-500 to-emerald-700 text-white',
         action: 'Billing',
         href: route('billing'),
       },
       agency: {
         label: 'AGENCY',
-        className: 'bg-purple-600 text-white',
+        className: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white',
         action: 'Billing',
         href: route('billing'),
       },
@@ -601,19 +600,25 @@ const IconBroom = () => (
 
     return (
       <div
-        className={`inline-flex items-center gap-2 rounded-full text-xs font-semibold px-3 py-1.5 shadow-sm ${current.className}`}
+        className={`inline-flex items-center gap-3 rounded-full text-xs font-semibold px-3 py-1.5 
+        ${plan !== 'free' ? 'shadow-md ring-1 ring-black/5' : 'shadow-sm'} ${current.className}`}
       >
-        {current.label}
+        <span className="tracking-wide">{current.label}</span>
+
         <Link
           href={current.href}
-          className="underline hover:opacity-80"
+          className={
+            plan === 'free'
+              ? 'underline hover:opacity-80'
+              : 'hover:opacity-80'
+          }
         >
           {current.action}
         </Link>
       </div>
     );
   })()}
-</div> 
+</div>
 
   {/* Setup progress */}
   <div className="text-[11px] text-gray-600">Setup {setupPercent}% complete</div>
