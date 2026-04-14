@@ -130,6 +130,13 @@ export default function Dashboard() {
     return () => { clearInterval(interval); clearTimeout(timeout); };
   }, [upgradeProcessing]);
 
+  const upgradedMsg =
+    currentPlan === 'agency'
+      ? 'Everything is unlocked. Enjoy white-label guest pages, unlimited properties, full analytics, maintenance tracking, and priority support.'
+      : currentPlan === 'pro'
+      ? 'Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.'
+      : 'Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.';
+
   const items = properties.data;
 
   const [sharePkg, setSharePkg] = React.useState(null);
@@ -469,13 +476,7 @@ const IconBroom = () => (
           <div className="font-semibold text-emerald-800 mb-1">
             Thanks, {firstName}! You’re on {PLAN_LABEL[currentPlan] ?? currentPlan} ✅
           </div>
-          <div className="text-emerald-700">
-            {currentPlan === ‘agency’
-              ? ‘Everything is unlocked. Enjoy white-label guest pages, unlimited properties, full analytics, maintenance tracking, and priority support.’
-              : currentPlan === ‘pro’
-              ? ‘Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.’
-              : ‘Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.’}
-          </div>
+          <div className="text-emerald-700">{upgradedMsg}</div>
         </div>
       ) : showUpgradeBanner ? (
         <div className="rounded-2xl border border-yellow-400 bg-yellow-50 p-4 mb-4 text-sm">
