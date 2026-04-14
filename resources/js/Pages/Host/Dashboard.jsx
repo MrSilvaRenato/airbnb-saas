@@ -470,7 +470,7 @@ const IconBroom = () => (
             Thanks, {firstName}! You’re on {PLAN_LABEL[currentPlan] ?? currentPlan} ✅
           </div>
           <div className="text-emerald-700">
-            {currentPlan === ‘agency’
+            {currentPlan === 'agency'
               ? ‘Everything is unlocked. Enjoy white-label guest pages, unlimited properties, full analytics, maintenance tracking, and priority support.’
               : currentPlan === ‘pro’
               ? ‘Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.’
