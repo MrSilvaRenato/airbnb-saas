@@ -29,10 +29,10 @@ class DispatchAutomatedMessages extends Command
         $sent = 0;
 
         foreach ($packages as $package) {
-            $user = $package->property?->user;
-            if (!$user || !in_array($user->plan, ['pro', 'host', 'admin'], true)) {
-                continue;
-            }
+           $user = $package->property?->user;
+if (!$user || in_array($user->plan, ['free', null], true)) {
+    continue;
+}
 
             $templates = MessageTemplate::where('user_id', $user->id)->where('is_enabled', true)->get();
             if ($templates->isEmpty()) {
