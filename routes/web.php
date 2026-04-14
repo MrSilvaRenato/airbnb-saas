@@ -244,6 +244,8 @@ Route::middleware(['auth', EnsureHost::class])->group(function () {
 | 404 fallback — must be last
 |--------------------------------------------------------------------------
 */
+require __DIR__ . '/auth.php';
+
 Route::fallback(function () {
     return Inertia::render('Errors/404', [
         'status'  => 404,
