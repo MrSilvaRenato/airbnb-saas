@@ -91,7 +91,7 @@ class PublicPackageController extends Controller
             'logo_url'      => null,
         ];
 
-        if ($owner && $owner->plan === 'pro') {
+        if ($owner && in_array($owner->plan, ['host', 'growth', 'pro', 'agency'])) {
             $branding = [
                 'display_name'  => $prop->brand_display_name,
                 'contact_label' => $prop->brand_contact_label,
@@ -167,9 +167,27 @@ class PublicPackageController extends Controller
             })->values()->toArray(),
         ];
 
+        // Upsell offers for this property
+        $upsells = $prop
+            ? $prop->upsellOffers()->where('enabled', true)->orderBy('sort_order')->get()->map(fn($o) => [
+                'id'          => $o->id,
+                'title'       => $o->title,
+                'description' => $o->description,
+                'price'       => $o->price,
+            ])->values()->toArray()
+            : [];
+
         return Inertia::render('Public/Package', [
-            'pkg'       => $pkg,
-            'branding'  => $branding,
+            'pkg'          => $pkg,
+            'branding'     => $branding,
+            'upsells'      => $upsells,
+            'package_id'   => $package->id,
+            'guest_email'  => $package->guest_email ?? '',
+            'guest_name'   => $package->guest_first_name ?? '',
+            'flash'        => [
+                'upsell_success' => session('upsell_success'),
+                'upsell_error'   => session('upsell_error'),
+            ],
         ]);
     }
 }

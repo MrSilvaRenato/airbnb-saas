@@ -16,8 +16,8 @@ class ExportController extends Controller
     {
         $user = $request->user();
 
-        if (!in_array($user->plan ?? 'free', ['host', 'pro'])) {
-            abort(403, 'Export is available on Host and Pro plans.');
+        if (!in_array($user->plan ?? 'free', ['host', 'growth', 'pro', 'agency'])) {
+            abort(403, 'Export is available on Growth and above plans.');
         }
 
         $propertyIds = Property::where('user_id', $user->id)->pluck('id');
@@ -100,8 +100,8 @@ class ExportController extends Controller
     {
         $user = $request->user();
 
-        if (($user->plan ?? 'free') !== 'pro') {
-            abort(403, 'Analytics export is available on the Pro plan.');
+        if (!in_array($user->plan ?? 'free', ['pro', 'agency'])) {
+            abort(403, 'Analytics export is available on Pro and Agency plans.');
         }
 
         $properties = Property::where('user_id', $user->id)

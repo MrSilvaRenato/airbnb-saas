@@ -1,5 +1,5 @@
-import React from 'react'
-import { Head, usePage } from '@inertiajs/react'
+import React, { useState } from 'react'
+import { Head, usePage, useForm } from '@inertiajs/react'
 
 /* ─────────────────────────────────────────────
    INLINE SVG ICONS  (zero external deps)
@@ -192,15 +192,22 @@ function getSectionConfig(type) {
 /* ─────────────────────────────────────────────
    SECTION CARD  (collapsible, smooth transition)
 ───────────────────────────────────────────── */
-function SectionCard({ section, defaultOpen }) {
+function SectionCard({ section, defaultOpen, onExpand }) {
   const [open, setOpen] = React.useState(defaultOpen)
   const cfg = getSectionConfig(section.type)
   const Icon = cfg.icon
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-[3px] ${cfg.border} overflow-hidden`}>
+    <div
+      className={`bg-white rounded-2xl shadow-sm border border-gray-100 border-l-[3px] ${cfg.border} overflow-hidden`}
+      data-section-id={section.id}
+    >
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          const next = !open
+          setOpen(next)
+          if (next && onExpand) onExpand(section.id)
+        }}
         className="w-full flex items-center gap-3 px-4 py-4 text-left active:bg-gray-50 transition-colors"
         aria-expanded={open}
       >
@@ -360,15 +367,116 @@ function OfflineBanner({ visible }) {
 }
 
 /* ─────────────────────────────────────────────
+   UPSELL OFFER CARD
+───────────────────────────────────────────── */
+function UpsellCard({ offer, packageId, guestEmail, guestName }) {
+  const [open, setOpen] = useState(false)
+  const [done, setDone] = useState(false)
+  const hasPaidPrice = offer.price && parseFloat(offer.price) > 0
+
+  // shared form state for both request + pay
+  const { data, setData, post, processing } = useForm({
+    guest_email: guestEmail,
+    guest_name:  guestName,
+    message:     '',
+    package_id:  packageId,
+  })
+
+  const submitRequest = (e) => {
+    e.preventDefault()
+    post(route('upsells.guest.request', offer.id), {
+      onSuccess: () => { setDone(true); setOpen(false) },
+    })
+  }
+
+  const submitPay = (e) => {
+    e.preventDefault()
+    // Redirects to Stripe Checkout — use standard form POST via Inertia
+    post(route('upsells.guest.pay', offer.id))
+  }
+
+  if (done) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 text-sm text-green-700 font-medium">
+        ✅ Request sent for <strong>{offer.title}</strong> — your host will be in touch!
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-800 text-sm">{offer.title}</p>
+          {offer.description && <p className="text-gray-500 text-xs mt-0.5">{offer.description}</p>}
+        </div>
+        <span className="text-sm font-bold text-indigo-700 flex-shrink-0">
+          {hasPaidPrice ? `A$${parseFloat(offer.price).toFixed(2)}` : 'Inquiry'}
+        </span>
+        {hasPaidPrice ? (
+          <button onClick={() => setOpen(o => !o)}
+            className="flex-shrink-0 bg-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-green-700 active:scale-95 transition-transform">
+            {open ? 'Cancel' : 'Pay now'}
+          </button>
+        ) : (
+          <button onClick={() => setOpen(o => !o)}
+            className="flex-shrink-0 bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition-transform">
+            {open ? 'Cancel' : 'Request'}
+          </button>
+        )}
+      </div>
+      {open && (
+        <form onSubmit={hasPaidPrice ? submitPay : submitRequest}
+          className="border-t border-gray-100 px-5 py-4 space-y-3 bg-gray-50">
+          <input type="email" required placeholder="Your email" value={data.guest_email}
+            onChange={e => setData('guest_email', e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white" />
+          <input type="text" placeholder="Your name (optional)" value={data.guest_name}
+            onChange={e => setData('guest_name', e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white" />
+          <textarea placeholder="Any message? (optional)" value={data.message}
+            onChange={e => setData('message', e.target.value)} rows={2}
+            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none bg-white" />
+          {hasPaidPrice ? (
+            <button type="submit" disabled={processing}
+              className="w-full bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2">
+              {processing ? 'Redirecting…' : `Pay A$${parseFloat(offer.price).toFixed(2)} securely`}
+              {!processing && <span className="text-xs opacity-70">via Stripe</span>}
+            </button>
+          ) : (
+            <button type="submit" disabled={processing}
+              className="w-full bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+              {processing ? 'Sending…' : 'Send request to host'}
+            </button>
+          )}
+        </form>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 export default function Package() {
-  const { pkg, branding } = usePage().props
+  const { pkg, branding, upsells = [], package_id, guest_email = '', guest_name = '', flash = {} } = usePage().props
 
   const quick = pkg.quick || {}
 
   // ── State ──────────────────────────────────
   const [toast, setToast] = React.useState({ visible: false, message: '' })
+
+  // Show toast on return from Stripe (upsell_paid / upsell_cancelled query params)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('upsell_paid') === '1') {
+      showToast('✅ Payment successful! Your host has been notified.')
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (params.get('upsell_cancelled') === '1') {
+      showToast('Payment cancelled.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
   const [copiedKey, setCopiedKey] = React.useState(null)
   const [isOffline, setIsOffline] = React.useState(
     typeof navigator !== 'undefined' ? !navigator.onLine : false
@@ -376,7 +484,100 @@ export default function Package() {
   const [stickyBarVisible, setStickyBarVisible] = React.useState(false)
 
   // ── Refs ───────────────────────────────────
-  const heroRef = React.useRef(null)
+  const heroRef  = React.useRef(null)
+  const engageRef = React.useRef({ token: null, queue: [], sectionTimers: {} })
+
+  // ── Engagement tracking (Phase 2C) ─────────
+  React.useEffect(() => {
+    const eng = engageRef.current
+
+    // Session token — unique per package per browser session
+    const storageKey = `ef_${package_id}`
+    let tok = null
+    try {
+      tok = sessionStorage.getItem(storageKey)
+      if (!tok) {
+        tok = Math.random().toString(36).slice(2) + Date.now().toString(36)
+        sessionStorage.setItem(storageKey, tok)
+      }
+    } catch {
+      tok = Math.random().toString(36).slice(2) + Date.now().toString(36)
+    }
+    eng.token = tok
+
+    // Queue the initial guide_open event
+    eng.queue.push({ event_type: 'guide_open', welcome_section_id: null, duration_seconds: null })
+
+    function flush() {
+      // Finalise any in-progress section view timers
+      Object.entries(eng.sectionTimers).forEach(([id, start]) => {
+        const dur = Math.round((Date.now() - start) / 1000)
+        if (dur >= 1) {
+          eng.queue.push({
+            event_type: 'section_view',
+            welcome_section_id: parseInt(id, 10),
+            duration_seconds: dur,
+          })
+        }
+        delete eng.sectionTimers[id]
+      })
+
+      const events = eng.queue.splice(0)
+      if (!events.length) return
+
+      fetch('/engagement/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ welcome_package_id: package_id, session_token: tok, events }),
+        keepalive: true,
+      }).catch(() => {})
+    }
+
+    // IntersectionObserver — track which sections scroll into view
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const id = entry.target.dataset.sectionId
+        if (!id) return
+        if (entry.isIntersecting) {
+          eng.sectionTimers[id] = Date.now()
+        } else if (eng.sectionTimers[id]) {
+          const dur = Math.round((Date.now() - eng.sectionTimers[id]) / 1000)
+          if (dur >= 1) {
+            eng.queue.push({
+              event_type: 'section_view',
+              welcome_section_id: parseInt(id, 10),
+              duration_seconds: dur,
+            })
+          }
+          delete eng.sectionTimers[id]
+        }
+      })
+    }, { threshold: 0.3 })
+
+    document.querySelectorAll('[data-section-id]').forEach(el => observer.observe(el))
+
+    // Flush on tab hide / page close (most reliable delivery point)
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    // Also flush after 4 s so guide_open reaches the server quickly
+    const earlyFlush = setTimeout(flush, 4000)
+
+    return () => {
+      clearTimeout(earlyFlush)
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [package_id])
+
+  // Called by SectionCard when the accordion is opened
+  function trackSectionExpand(sectionId) {
+    const eng = engageRef.current
+    if (!eng.token) return
+    eng.queue.push({ event_type: 'section_expand', welcome_section_id: sectionId, duration_seconds: null })
+  }
 
   // ── Offline detection ──────────────────────
   React.useEffect(() => {
@@ -631,12 +832,29 @@ export default function Package() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Your Guide</p>
               <div className="grid gap-3">
                 {sections.map((s, i) => (
-                  <SectionCard key={s.id || i} section={s} defaultOpen={i === 0} />
+                  <SectionCard key={s.id || i} section={s} defaultOpen={i === 0} onExpand={trackSectionExpand} />
                 ))}
               </div>
             </>
           )}
         </div>
+
+        {/* ── UPSELLS ── */}
+        {upsells.length > 0 && (
+          <div className="mt-8">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Add-ons & Extras</p>
+            {flash.upsell_success && (
+              <div className="mb-3 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
+                {flash.upsell_success}
+              </div>
+            )}
+            <div className="grid gap-3">
+              {upsells.map(o => (
+                <UpsellCard key={o.id} offer={o} packageId={package_id} guestEmail={guest_email} guestName={guest_name} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── SHARE ROW ── */}
         <div className="mt-8 flex gap-3">

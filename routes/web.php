@@ -24,7 +24,11 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ChatBotController;
 use App\Http\Controllers\PushSubscriptionController;
-use App\Http\Controllers\MessagingTemplateController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\IcalFeedController;
+use App\Http\Controllers\MessageTemplateController;
+use App\Http\Controllers\UpsellOfferController;
+use App\Http\Controllers\EngagementController;
 
 // ChatBot — public (guest)
 Route::get('/chat-status', [ChatBotController::class, 'chatStatus']);
@@ -47,6 +51,27 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
 // Push Browser notifications for LiveChat to Admin
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('auth');
+
+// Profile
+Route::middleware('auth')->group(function () {
+    Route::get('/profile',        [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit',   [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile',       [ProfileController::class, 'update']);           // method spoofing via _method=PATCH
+    Route::patch('/profile',      [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile',     [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Automated messaging templates
+    Route::get('/messaging/templates',                       [MessageTemplateController::class, 'index'])->name('messaging.templates');
+    Route::patch('/messaging/templates/{template}',          [MessageTemplateController::class, 'update'])->name('messaging.templates.update');
+    Route::delete('/messaging/templates/{template}',         [MessageTemplateController::class, 'destroy'])->name('messaging.templates.destroy');
+
+    // Upsell offers (host management)
+    Route::get('/host/properties/{property}/upsells',        [UpsellOfferController::class, 'index'])->name('upsells.index');
+    Route::post('/host/properties/{property}/upsells',       [UpsellOfferController::class, 'store'])->name('upsells.store');
+    Route::patch('/host/upsells/{offer}',                    [UpsellOfferController::class, 'update'])->name('upsells.update');
+    Route::delete('/host/upsells/{offer}',                   [UpsellOfferController::class, 'destroy'])->name('upsells.destroy');
+    Route::patch('/host/upsell-requests/{upsellRequest}',    [UpsellOfferController::class, 'updateRequest'])->name('upsells.requests.update');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -98,16 +123,6 @@ Route::get('/dashboard', function () {
     // unexpected role
     abort(403);
 })->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
-    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Accept both PATCH and POST for multipart profile submissions (method-spoof fallback).
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile', [ProfileController::class, 'update']);
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
 
 /*
 |--------------------------------------------------------------------------
@@ -170,6 +185,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::delete('/properties/{property}', [PropertyController::class, 'destroy'])
         ->name('properties.destroy');
+
+    // iCal Feeds
+    Route::post('/properties/{property}/ical',       [IcalFeedController::class, 'store'])->name('ical.store');
+    Route::post('/properties/{property}/ical/sync',  [IcalFeedController::class, 'sync'])->name('ical.sync');
+    Route::delete('/properties/{property}/ical',     [IcalFeedController::class, 'destroy'])->name('ical.destroy');
 
     /*
     |-------------------------
@@ -284,6 +304,13 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 */
 Route::get('/p/{package:slug}', [PublicPackageController::class, 'show'])
     ->name('public.package');
+
+// Guest upsell — inquiry (no auth) and Stripe payment (no auth)
+Route::post('/upsells/{offer}/request', [UpsellOfferController::class, 'guestRequest'])->name('upsells.guest.request');
+Route::post('/upsells/{offer}/pay',     [UpsellOfferController::class, 'guestPay'])->name('upsells.guest.pay');
+
+// Guest engagement tracking (no auth — beacon from public package page)
+Route::post('/engagement/track', [EngagementController::class, 'track'])->name('engagement.track');
 
 
     

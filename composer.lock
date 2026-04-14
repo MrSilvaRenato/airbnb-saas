@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0616e9394be0c81a4485138ec3926a14",
+    "content-hash": "774c9c4666ff1e7bdd8f0f8c103076f8",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -3045,6 +3045,57 @@
                 }
             ],
             "time": "2025-10-18T11:10:27+00:00"
+        },
+        {
+            "name": "om/icalparser",
+            "version": "v3.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/OzzyCzech/icalparser.git",
+                "reference": "bc7a82b12455ae9b62ce8e7f2d0273e86c931ecc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/OzzyCzech/icalparser/zipball/bc7a82b12455ae9b62ce8e7f2d0273e86c931ecc",
+                "reference": "bc7a82b12455ae9b62ce8e7f2d0273e86c931ecc",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1.0"
+            },
+            "require-dev": {
+                "nette/tester": "^2.5.7"
+            },
+            "suggest": {
+                "ext-dom": "for timezone tool"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Roman Ožana",
+                    "email": "roman@ozana.cz"
+                }
+            ],
+            "description": "Simple iCal parser",
+            "keywords": [
+                "calendar",
+                "ical",
+                "parser"
+            ],
+            "support": {
+                "issues": "https://github.com/OzzyCzech/icalparser/issues",
+                "source": "https://github.com/OzzyCzech/icalparser/tree/v3.2.1"
+            },
+            "time": "2025-12-15T06:25:09+00:00"
         },
         {
             "name": "phpoption/phpoption",

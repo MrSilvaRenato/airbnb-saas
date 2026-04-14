@@ -25,7 +25,7 @@ class SendDailyGuestLinks extends Command
             ->whereNull('sent_at')
             ->whereNotNull('guest_email')
             ->get()
-            ->filter(fn($pkg) => $pkg->property?->user?->plan === 'pro');
+            ->filter(fn($pkg) => in_array($pkg->property?->user?->plan, ['host', 'growth', 'pro', 'agency']));
 
         $count = 0;
         foreach ($packages as $pkg) {

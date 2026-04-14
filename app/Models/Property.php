@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
+// Models referenced in relations (no explicit use needed for hasMany, kept for clarity)
 
 class Property extends Model
 {
@@ -58,6 +59,16 @@ class Property extends Model
     public function maintenanceTasks(): HasMany
     {
         return $this->hasMany(MaintenanceTask::class);
+    }
+
+    public function upsellOffers(): HasMany
+    {
+        return $this->hasMany(UpsellOffer::class);
+    }
+
+    public function icalFeeds(): HasMany
+    {
+        return $this->hasMany(IcalFeed::class);
     }
 
     /*

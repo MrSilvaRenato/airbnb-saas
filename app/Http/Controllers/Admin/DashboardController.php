@@ -27,18 +27,21 @@ class DashboardController extends Controller
         'updated_at'       => $u->updated_at->toISOString(),
     ]);
 
-        $pro  = $users->where('plan', 'pro')->count();
-        $host = $users->where('plan', 'host')->count();
-        $free = $users->where('plan', 'free')->count();
+        $growth = $users->where('plan', 'growth')->count();
+        $host   = $users->where('plan', 'host')->count();   // legacy name for growth tier
+        $pro    = $users->where('plan', 'pro')->count();
+        $agency = $users->where('plan', 'agency')->count();
+        $free   = $users->where('plan', 'free')->count();
 
         return Inertia::render('Admin/Dashboard', [
             'users'  => $users,
             'totals' => [
-                'total' => $users->count(),
-                'pro'   => $pro,
-                'host'  => $host,
-                'free'  => $free,
-                'mrr'   => ($host * 19) + ($pro * 49),
+                'total'  => $users->count(),
+                'growth' => $growth + $host,
+                'pro'    => $pro,
+                'agency' => $agency,
+                'free'   => $free,
+                'mrr'    => (($growth + $host) * 29) + ($pro * 79) + ($agency * 199),
             ],
         ]);
     }
@@ -46,10 +49,12 @@ class DashboardController extends Controller
     public function updatePlan(User $user)
     {
         $newPlan = match($user->plan) {
-            'free'  => 'host',
-            'host'  => 'pro',
-            'pro'   => 'free',
-            default => 'host',
+            'free'   => 'growth',
+            'growth' => 'pro',
+            'host'   => 'pro',    // legacy host → upgrade to pro
+            'pro'    => 'agency',
+            'agency' => 'free',
+            default  => 'growth',
         };
         $user->update(['plan' => $newPlan]);
         return back();

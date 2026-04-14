@@ -14,7 +14,7 @@ class MaintenanceController extends Controller
     {
         $user = $request->user();
 
-        if ($user->plan !== 'pro') {
+        if (!in_array($user->plan, ['pro', 'agency'])) {
             return redirect()->route('checkout.show');
         }
 
@@ -58,7 +58,7 @@ class MaintenanceController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if ($user->plan !== 'pro') abort(403);
+        if (!in_array($user->plan, ['pro', 'agency'])) abort(403);
 
         $validated = $request->validate([
             'property_id' => 'required|exists:properties,id',
@@ -86,7 +86,7 @@ class MaintenanceController extends Controller
     public function update(Request $request, MaintenanceTask $task)
     {
         $user = $request->user();
-        if ($user->plan !== 'pro') abort(403);
+        if (!in_array($user->plan, ['pro', 'agency'])) abort(403);
 
         // Ensure task belongs to this user
         abort_unless(
@@ -118,7 +118,7 @@ class MaintenanceController extends Controller
     public function destroy(Request $request, MaintenanceTask $task)
     {
         $user = $request->user();
-        if ($user->plan !== 'pro') abort(403);
+        if (!in_array($user->plan, ['pro', 'agency'])) abort(403);
 
         abort_unless(
             Property::where('id', $task->property_id)->where('user_id', $user->id)->exists(),

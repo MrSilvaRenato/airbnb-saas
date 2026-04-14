@@ -9,4 +9,10 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Send guest welcome emails to guests checking in today (08:00 AEST = 22:00 UTC)
-Schedule::command('hostflows:dispatch-automated-messages')->everyFiveMinutes();
+Schedule::command('hostflows:send-guest-links')->dailyAt('22:00');
+
+// Sync all iCal feeds every 15 minutes
+Schedule::command('ical:sync')->everyFifteenMinutes();
+
+// Send scheduled guest messages (check every minute)
+Schedule::job(new \App\Jobs\SendScheduledMessages)->everyMinute();

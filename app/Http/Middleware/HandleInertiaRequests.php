@@ -40,19 +40,7 @@ public function share(Request $request): array
     return array_merge(parent::share($request), [
         'auth' => [
             'user' => $request->user()
-                ? $request->user()->only(
-                    'id',
-                    'name',
-                    'email',
-                    'phone',
-                    'business_name',
-                    'host_display_name',
-                    'profile_bio',
-                    'brand_logo_path',
-                    'role',
-                    'plan',
-                    'notify_on_guest_view'
-                )
+                ? $request->user()->only('id','name','email','role','plan','notify_on_guest_view','email_verified_at','profile_photo','tagline','bio','location','website','phone')
                 : null,
         ],
         'flash' => [

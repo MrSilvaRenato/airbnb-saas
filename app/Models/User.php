@@ -38,6 +38,12 @@ class User extends Authenticatable
         'plan_renews_at',
         'plan_ends_at',
         'subscription_started_at',
+        'profile_photo',
+        'tagline',
+        'bio',
+        'location',
+        'website',
+        'phone',
     ];
 
     /**

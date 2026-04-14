@@ -96,6 +96,8 @@ function Paginator({ links }) {
   );
 }
 
+const PLAN_LABEL = { free: 'Starter', growth: 'Growth', host: 'Growth', pro: 'Pro', agency: 'Agency' };
+
 export default function Dashboard() {
   const {
     properties,
@@ -110,10 +112,23 @@ export default function Dashboard() {
   } = usePage().props;
 
   const firstName = userMeta?.first_name || "Host";
-  const isFreePlan = userMeta?.plan === "free";
+  const currentPlan = userMeta?.plan ?? 'free';
+  const isFreePlan = currentPlan === "free";
   const blockedOnProperty = limits && !limits.canCreateProperty;
   const blockedOnStay = limits && !limits.canCreateStay;
   const showUpgradeBanner = isFreePlan && (blockedOnProperty || blockedOnStay);
+
+  // After checkout, the webhook may not have fired yet. If plan is still free,
+  // poll the server every 4 seconds until the plan is activated (up to 30s).
+  const upgradeProcessing = recentlyUpgraded && isFreePlan;
+  React.useEffect(() => {
+    if (!upgradeProcessing) return;
+    const interval = setInterval(() => {
+      router.reload({ only: ['userMeta', 'limits', 'auth'], preserveScroll: true });
+    }, 4000);
+    const timeout = setTimeout(() => clearInterval(interval), 30000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [upgradeProcessing]);
 
   const items = properties.data;
 
@@ -436,14 +451,30 @@ const IconBroom = () => (
       <OnboardingWizard step={onboarding.step} skipped={onboarding.skipped} />
 
       {/* banners */}
-      {recentlyUpgraded ? (
+      {recentlyUpgraded && upgradeProcessing ? (
+        <div className="rounded-2xl border border-blue-300 bg-blue-50 p-4 mb-4 text-sm">
+          <div className="font-semibold text-blue-800 mb-1 flex items-center gap-2">
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+            Activating your plan…
+          </div>
+          <div className="text-blue-700">
+            Payment received — we’re activating your plan now. This page will update automatically in a few seconds.
+          </div>
+          <button onClick={() => router.reload()} className="mt-3 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700">
+            Refresh now
+          </button>
+        </div>
+      ) : recentlyUpgraded ? (
         <div className="rounded-2xl border border-emerald-500 bg-emerald-50 p-4 mb-4 text-sm">
           <div className="font-semibold text-emerald-800 mb-1">
-            Thanks, {firstName}! You’re on Pro ✅
+            Thanks, {firstName}! You’re on {PLAN_LABEL[currentPlan] ?? currentPlan} ✅
           </div>
           <div className="text-emerald-700">
-            You can now create unlimited properties and stays, add your own
-            branding to guest pages, and see visit analytics for every stay.
+            {currentPlan === ‘agency’
+              ? ‘Everything is unlocked. Enjoy white-label guest pages, unlimited properties, full analytics, maintenance tracking, and priority support.’
+              : currentPlan === ‘pro’
+              ? ‘Unlimited properties, full analytics, maintenance tracking, upsells, and branding are now unlocked.’
+              : ‘Up to 5 properties, iCal sync, automated messaging, upsells, and branding are now unlocked.’}
           </div>
         </div>
       ) : showUpgradeBanner ? (
@@ -467,100 +498,144 @@ const IconBroom = () => (
         </div>
       ) : null}
 
-      {/* === NEW HEADER BLOCK === */}
-      <div className="mb-6 rounded-2xl border bg-white p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          {/* Left: greeting + next check-in */}
-          <div className="min-w-0">
-            <div className="text-lg font-semibold text-gray-900">
-              Welcome back, {firstName} 👋
-            </div>
+   {/* === NEW HEADER BLOCK === */}
+<div className="mb-6 rounded-2xl border bg-white p-5">
+  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    {/* Left: greeting + next check-in + progress */}
+    <div className="min-w-0 flex-1">
+      <div className="text-lg font-semibold text-gray-900">
+        Welcome back, {firstName} 👋
+      </div>
 
-            {nextInfo ? (
-              <div className="mt-1 text-sm text-gray-700 flex flex-wrap items-center gap-2">
-                <span className="truncate">
-                  {nextInfo.isOngoing ? "Guest in house now:" : "Next check-in:"}{" "}
-                  <strong>
-                    {nextInfo.pkg.guest_first_name || "Guest"}
-                    {nextInfo.pkg.guest_count ? ` (${nextInfo.pkg.guest_count})` : ""}
-                  </strong>{" "}
-                  at <strong>{nextInfo.propertyTitle}</strong>{" "}
-                  • {fmtDate(nextInfo.pkg.check_in_date)} → {fmtDate(nextInfo.pkg.check_out_date)}
-                </span>
+      {nextInfo ? (
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-700">
+          <span className="truncate">
+            {nextInfo.isOngoing ? "Guest in house now:" : "Next check-in:"}{" "}
+            <strong>
+              {nextInfo.pkg.guest_first_name || "Guest"}
+              {nextInfo.pkg.guest_count ? ` (${nextInfo.pkg.guest_count})` : ""}
+            </strong>{" "}
+            at <strong>{nextInfo.propertyTitle}</strong>{" "}
+            • {fmtDate(nextInfo.pkg.check_in_date)} → {fmtDate(nextInfo.pkg.check_out_date)}
+          </span>
 
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full border ${toneClass(
-                    nextInfo.status.tone
-                  )}`}
-                >
-                  {nextInfo.status.label}
-                </span>
+          <span
+            className={`text-[10px] rounded-full border px-2 py-0.5 ${toneClass(
+              nextInfo.status.tone
+            )}`}
+          >
+            {nextInfo.status.label}
+          </span>
 
-                <button
-                  className="ml-1 inline-flex items-center rounded-md bg-black text-white text-xs font-medium px-2.5 py-1 hover:bg-gray-800"
-                  onClick={() => {
-                    setSharePkg(nextInfo.pkg);
-                    setSharePropertyTitle(nextInfo.propertyTitle);
-                  }}
-                >
-                  Send guest link
-                </button>
-              </div>
-            ) : (
-              <div className="mt-1 text-sm text-gray-600">
-                No upcoming stays.{" "}
-                {items.length ? (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() => {
-                      if (!limits?.canCreateStay) return;
-                      router.visit(route("packages.create", items[0].id));
-                    }}
-                  >
-                    Create your next stay
-                  </button>
-                ) : (
-                  <button
-                    className="underline underline-offset-2"
-                    onClick={() => router.visit(route("properties.create"))}
-                  >
-                    Add your first property
-                  </button>
-                )}
-                .
-              </div>
-            )}
-          </div>
+          <button
+            className="ml-1 inline-flex items-center rounded-md bg-black px-2.5 py-1 text-xs font-medium text-white hover:bg-gray-800"
+            onClick={() => {
+              setSharePkg(nextInfo.pkg);
+              setSharePropertyTitle(nextInfo.propertyTitle);
+            }}
+          >
+            Send guest link
+          </button>
+        </div>
+      ) : (
+        <div className="mt-1 text-sm text-gray-600">
+          No upcoming stays.{" "}
+          {items.length ? (
+            <button
+              className="underline underline-offset-2"
+              onClick={() => {
+                if (!limits?.canCreateStay) return;
+                router.visit(route("packages.create", items[0].id));
+              }}
+            >
+              Create your next stay
+            </button>
+          ) : (
+            <button
+              className="underline underline-offset-2"
+              onClick={() => router.visit(route("properties.create"))}
+            >
+              Add your first property
+            </button>
+          )}
+          .
+        </div>
+      )}
 
-          {/* Right: plan badge */}
-     {/* Right: plan + setup */}
-<div className="shrink-0 text-right space-y-2 min-w-[220px]">
-  {userMeta?.plan === "pro" ? (
-    <div className="inline-flex items-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 shadow-sm">
-      PRO • Unlimited
-    </div>
-  ) : (
-    <div className="inline-flex items-center gap-2 rounded-full bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 shadow-sm">
-      FREE
-      <Link href={route('checkout.show')} className="underline hover:text-gray-900">
-        Upgrade
-      </Link>
-    </div>
-  )}
-
-  {/* Setup progress */}
-  <div className="text-[11px] text-gray-600">Setup {setupPercent}% complete</div>
-  <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-    <div
-      className="h-full bg-gray-900 transition-all"
-      style={{ width: `${setupPercent}%` }}
-    />
-  </div>
-</div>
-  
+      {/* Setup progress */}
+      <div className="mt-4">
+        <div className="text-[11px] text-gray-600">
+          Setup {setupPercent}% complete
+        </div>
+        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div
+            className="h-full bg-gray-900 transition-all"
+            style={{ width: `${setupPercent}%` }}
+          />
         </div>
       </div>
-      {/* === END HEADER BLOCK === */}
+    </div>
+
+    {/* Right: plan label */}
+    <div className="shrink-0 min-w-[220px] text-left md:text-right">
+      {(() => {
+        const plan = (userMeta?.plan || "free").toLowerCase();
+
+        const planMap = {
+          free: {
+            label: "FREE",
+            className: "bg-gray-100 text-gray-700 ring-1 ring-gray-200",
+            action: "Upgrade",
+            href: route("checkout.show"),
+          },
+          growth: {
+            label: "GROWTH",
+            className:
+              "bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-600 text-stone-900 ring-1 ring-amber-200/60 shadow-md",
+            action: "Billing",
+            href: route("billing.manage"),
+          },
+          pro: {
+            label: "PRO",
+            className:
+              "bg-gradient-to-r from-yellow-200 via-amber-400 to-yellow-500 text-stone-900 ring-1 ring-amber-200/70 shadow-md",
+            action: "Billing",
+            href: route("billing.manage"),
+          },
+          agency: {
+            label: "AGENCY",
+            className:
+              "bg-gradient-to-r from-stone-900 via-amber-500 to-stone-800 text-white ring-1 ring-amber-300/40 shadow-md",
+            action: "Billing",
+            href: route("billing.manage"),
+          },
+        };
+
+        const current = planMap[plan] || planMap.free;
+
+        return (
+          <div
+            className={`inline-flex items-center gap-3 rounded-full px-3 py-1.5 text-xs font-semibold ${current.className}`}
+          >
+            <span className="tracking-[0.12em]">{current.label}</span>
+
+            <Link
+              href={current.href}
+              className={
+                plan === "free"
+                  ? "underline underline-offset-2 hover:opacity-80"
+                  : "hover:opacity-80"
+              }
+            >
+              {current.action}
+            </Link>
+          </div>
+        );
+      })()}
+    </div>
+  </div>
+</div>
+{/* === END HEADER BLOCK === */}
 
       {/* Filters + KPI row */}
       <div className="rounded-2xl border bg-white p-4 mb-1">
@@ -731,6 +806,14 @@ const IconBroom = () => (
             >
               {I.edit}
               <span>Edit</span>
+            </Link>
+
+            <Link
+              href={route("upsells.index", p.id)}
+              className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+            >
+              <span>💰</span>
+              <span>Upsells</span>
             </Link>
 
             <button
