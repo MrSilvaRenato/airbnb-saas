@@ -288,10 +288,11 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-3">Simple, transparent pricing</h2>
           <p className="text-gray-500 mb-12">Start free. Upgrade when you're ready. Cancel any time.</p>
-          <div className="grid md:grid-cols-3 gap-6 items-center">
-            <PricingCard name="Starter" price={0} desc="Perfect for getting started" features={['1 property','1 active stay','Guest welcome page + QR','Wi-Fi, lock code, house rules']} cta="Start free" onCta={() => setMode('register')} />
-            <PricingCard name="Host" price={19} desc="For serious hosts" features={['Up to 5 properties','Unlimited stays','Custom branding','Basic analytics']} cta="Get started" highlight onCta={() => setMode('register')} />
-            <PricingCard name="Pro" price={49} desc="For agencies & managers" features={['Unlimited properties','Full analytics + revenue','Maintenance tracking','Guest auto-email','CSV export','Priority support']} cta="Go Pro" onCta={() => setMode('register')} />
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-center">
+            <PricingCard name="Starter" price={0} desc="Try HostFlows risk-free" features={['1 property','1 active stay','Guest welcome page + QR','Wi-Fi, lock code & house rules']} cta="Start free" onCta={() => setMode('register')} />
+            <PricingCard name="Growth" price={29} desc="For active hosts" features={['Up to 5 properties','Unlimited stays','iCal sync (Airbnb / VRBO)','Automated guest messaging','Guest upsell engine','Custom branding','Analytics dashboard']} cta="Get started" highlight onCta={() => setMode('register')} />
+            <PricingCard name="Pro" price={79} desc="For scaling portfolios" features={['Unlimited properties','Unlimited stays','Everything in Growth','Full analytics + revenue','Maintenance tracking','CSV export']} cta="Go Pro" onCta={() => setMode('register')} />
+            <PricingCard name="Agency" price={199} desc="For agencies & managers" features={['Unlimited properties','Unlimited stays','Everything in Pro','White-label guest pages','Priority support']} cta="Contact us" onCta={() => setMode('register')} />
           </div>
         </div>
       </section>
