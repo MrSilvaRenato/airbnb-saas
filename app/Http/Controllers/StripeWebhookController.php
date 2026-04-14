@@ -187,77 +187,140 @@ class StripeWebhookController extends Controller
     /**
      * Map Stripe subscription -> our User billing columns.
      */
+    // protected function syncSubscriptionToUser($subscription)
+    // {
+    //     // subscription has:
+    //     //  - customer (cus_xxx)
+    //     //  - status ('active', 'trialing', 'canceled', etc.)
+    //     //  - current_period_end (unix timestamp)
+
+    //     if (!$subscription->customer) {
+    //         return;
+    //     }
+
+    //     $user = User::where('stripe_customer_id', $subscription->customer)->first();
+    //     if (!$user) {
+    //         Log::warning('Stripe webhook: no user for subscription sync', [
+    //             'customer' => $subscription->customer,
+    //         ]);
+    //         return;
+    //     }
+
+    //     // status from Stripe
+    //     $status = $subscription->status; // e.g. 'active', 'trialing', 'past_due', 'canceled'
+
+    //     // renewal date
+    //     $renewsAt = null;
+    //     if (!empty($subscription->current_period_end)) {
+    //         $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
+    //     }
+
+    //     // Determine which plan from the Stripe price ID
+    //     $priceId      = $subscription->items->data[0]->price->id ?? null;
+    //     $priceGrowth  = config(‘stripe.price_growth’);
+    //     $pricePro     = config(‘stripe.price_pro’);
+    //     $priceAgency  = config(‘stripe.price_agency’);
+    //     $priceHost    = config(‘stripe.price_host’);
+
+    //     if ($priceId === $pricePro) {
+    //         $planValue = ‘pro’;
+    //     } elseif ($priceId === $priceAgency) {
+    //         $planValue = ‘agency’;
+    //     } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
+    //         $planValue = ‘growth’;
+    //     } else {
+    //         $planValue = ‘growth’; // safe default
+    //     }
+
+    //     $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
+
+    //     if (in_array($status, [‘active’, ‘trialing’, ‘past_due’])) {
+    //         $user->plan                   = $planValue;
+    //         $user->stripe_status          = $status;
+    //         $user->stripe_subscription_id = $subscription->id;
+    //         $user->plan_renews_at         = $renewsAt;
+    //         $user->plan_ends_at           = $cancelAtPeriodEnd ? $renewsAt : null;
+
+    //         // Record subscription start date once
+    //         if (!$user->subscription_started_at) {
+    //             $startedAt = !empty($subscription->start_date)
+    //                 ? Carbon::createFromTimestamp($subscription->start_date)
+    //                 : now();
+    //             $user->subscription_started_at = $startedAt;
+    //         }
+    //     } else {
+    //         $user->plan                   = ‘free’;
+    //         $user->stripe_status          = $status;
+    //         $user->stripe_subscription_id = $subscription->id;
+    //         $user->plan_renews_at         = null;
+    //         $user->plan_ends_at           = null;
+    //     }
+
+    //     $user->save();
+    // }
+
     protected function syncSubscriptionToUser($subscription)
-    {
-        // subscription has:
-        //  - customer (cus_xxx)
-        //  - status ('active', 'trialing', 'canceled', etc.)
-        //  - current_period_end (unix timestamp)
-
-        if (!$subscription->customer) {
-            return;
-        }
-
-        $user = User::where('stripe_customer_id', $subscription->customer)->first();
-        if (!$user) {
-            Log::warning('Stripe webhook: no user for subscription sync', [
-                'customer' => $subscription->customer,
-            ]);
-            return;
-        }
-
-        // status from Stripe
-        $status = $subscription->status; // e.g. 'active', 'trialing', 'past_due', 'canceled'
-
-        // renewal date
-        $renewsAt = null;
-        if (!empty($subscription->current_period_end)) {
-            $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
-        }
-
-        // Determine which plan from the Stripe price ID
-        $priceId      = $subscription->items->data[0]->price->id ?? null;
-        $priceGrowth  = config(‘stripe.price_growth’);
-        $pricePro     = config(‘stripe.price_pro’);
-        $priceAgency  = config(‘stripe.price_agency’);
-        $priceHost    = config(‘stripe.price_host’);
-
-        if ($priceId === $pricePro) {
-            $planValue = ‘pro’;
-        } elseif ($priceId === $priceAgency) {
-            $planValue = ‘agency’;
-        } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
-            $planValue = ‘growth’;
-        } else {
-            $planValue = ‘growth’; // safe default
-        }
-
-        $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
-
-        if (in_array($status, [‘active’, ‘trialing’, ‘past_due’])) {
-            $user->plan                   = $planValue;
-            $user->stripe_status          = $status;
-            $user->stripe_subscription_id = $subscription->id;
-            $user->plan_renews_at         = $renewsAt;
-            $user->plan_ends_at           = $cancelAtPeriodEnd ? $renewsAt : null;
-
-            // Record subscription start date once
-            if (!$user->subscription_started_at) {
-                $startedAt = !empty($subscription->start_date)
-                    ? Carbon::createFromTimestamp($subscription->start_date)
-                    : now();
-                $user->subscription_started_at = $startedAt;
-            }
-        } else {
-            $user->plan                   = ‘free’;
-            $user->stripe_status          = $status;
-            $user->stripe_subscription_id = $subscription->id;
-            $user->plan_renews_at         = null;
-            $user->plan_ends_at           = null;
-        }
-
-        $user->save();
+{
+    if (!$subscription->customer) {
+        return;
     }
+
+    $user = User::where('stripe_customer_id', $subscription->customer)->first();
+    if (!$user) {
+        Log::warning('Stripe webhook: no user for subscription sync', [
+            'customer' => $subscription->customer,
+        ]);
+        return;
+    }
+
+    $status = $subscription->status;
+
+    $renewsAt = null;
+    if (!empty($subscription->current_period_end)) {
+        $renewsAt = Carbon::createFromTimestamp($subscription->current_period_end);
+    }
+
+    $priceId      = $subscription->items->data[0]->price->id ?? null;
+    $priceGrowth  = config('stripe.price_growth');
+    $pricePro     = config('stripe.price_pro');
+    $priceAgency  = config('stripe.price_agency');
+    $priceHost    = config('stripe.price_host');
+
+    if ($priceId === $pricePro) {
+        $planValue = 'pro';
+    } elseif ($priceId === $priceAgency) {
+        $planValue = 'agency';
+    } elseif ($priceId === $priceGrowth || $priceId === $priceHost) {
+        $planValue = 'growth';
+    } else {
+        $planValue = 'growth';
+    }
+
+    $cancelAtPeriodEnd = $subscription->cancel_at_period_end ?? false;
+
+    if (in_array($status, ['active', 'trialing', 'past_due'])) {
+        $user->plan                   = $planValue;
+        $user->stripe_status          = $status;
+        $user->stripe_subscription_id = $subscription->id;
+        $user->plan_renews_at         = $renewsAt;
+        $user->plan_ends_at           = $cancelAtPeriodEnd ? $renewsAt : null;
+
+        if (!$user->subscription_started_at) {
+            $startedAt = !empty($subscription->start_date)
+                ? Carbon::createFromTimestamp($subscription->start_date)
+                : now();
+            $user->subscription_started_at = $startedAt;
+        }
+    } else {
+        $user->plan                   = 'free';
+        $user->stripe_status          = $status;
+        $user->stripe_subscription_id = $subscription->id;
+        $user->plan_renews_at         = null;
+        $user->plan_ends_at           = null;
+    }
+
+    $user->save();
+}
 
     /**
      * Handle cancellation: customer.subscription.deleted
