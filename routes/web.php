@@ -177,12 +177,6 @@ Route::middleware(['auth', EnsureHost::class])->group(function () {
     // Activity feed
     Route::post('/activities/clear', [ActivityController::class, 'clear'])->name('activities.clear');
 
-    /*
-    | Automated messaging templates (growth/pro/agency — gated inside controller)
-    */
-    Route::get('/messaging/templates',              [MessageTemplateController::class, 'index'])->name('messaging.templates');
-    Route::patch('/messaging/templates/{template}', [MessageTemplateController::class, 'update'])->name('messaging.templates.update');
-    Route::delete('/messaging/templates/{template}',[MessageTemplateController::class, 'destroy'])->name('messaging.templates.destroy');
 
     /*
     | Upsell offers (growth/pro/agency — gated inside controller)
