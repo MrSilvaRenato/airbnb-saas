@@ -24,3 +24,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /.claude
+db_schema.sql
+file_list.txt
+laravel_structure.txt
+structure.txt

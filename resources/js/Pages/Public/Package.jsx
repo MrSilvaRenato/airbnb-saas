@@ -460,7 +460,18 @@ function UpsellCard({ offer, packageId, guestEmail, guestName }) {
 ───────────────────────────────────────────── */
 export default function Package() {
   const { pkg, branding, upsells = [], package_id, guest_email = '', guest_name = '', flash = {} } = usePage().props
+const [showMaintenance, setShowMaintenance] = useState(false)
 
+const { data, setData, post, processing } = useForm({
+  title: '',
+  description: '',
+  priority: 'medium',
+  category: '',
+  location: '',
+  guest_name: guest_name,
+  guest_email: guest_email,
+  guest_phone: '',
+})
   const quick = pkg.quick || {}
 
   // ── State ──────────────────────────────────
@@ -838,6 +849,93 @@ export default function Package() {
             </>
           )}
         </div>
+
+{/* ── GUEST MAINTENANCE ── */}
+<div className="mt-10">
+  <div className="bg-white rounded-2xl border border-gray-200 p-5">
+    <p className="font-semibold text-gray-800 mb-2">Need help during your stay?</p>
+    <p className="text-sm text-gray-500 mb-4">
+      Report any issues and your host will be notified immediately.
+    </p>
+
+    <button
+      onClick={() => setShowMaintenance(!showMaintenance)}
+      className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold"
+    >
+      {showMaintenance ? 'Cancel' : 'Report an Issue'}
+    </button>
+  </div>
+</div>
+
+{showMaintenance && (
+  <form
+    onSubmit={(e) => {
+      e.preventDefault()
+      const slug = window.location.pathname.split('/').pop()
+      post(`/p/${slug}/maintenance`)
+    }}
+    className="mt-4 bg-white border border-gray-200 rounded-2xl p-5 space-y-3"
+  >
+    <input
+      placeholder="Issue title"
+      value={data.title}
+      onChange={(e) => setData('title', e.target.value)}
+      className="w-full border rounded-xl px-3 py-2 text-sm"
+      required
+    />
+
+    <textarea
+      placeholder="Describe the issue"
+      value={data.description}
+      onChange={(e) => setData('description', e.target.value)}
+      className="w-full border rounded-xl px-3 py-2 text-sm"
+      rows={3}
+      required
+    />
+
+    <select
+      value={data.priority}
+      onChange={(e) => setData('priority', e.target.value)}
+      className="w-full border rounded-xl px-3 py-2 text-sm"
+    >
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+      <option value="urgent">Urgent</option>
+    </select>
+
+    <input
+      placeholder="Location (e.g. kitchen, bathroom)"
+      value={data.location}
+      onChange={(e) => setData('location', e.target.value)}
+      className="w-full border rounded-xl px-3 py-2 text-sm"
+    />
+
+    <input
+      placeholder="Your name"
+      value={data.guest_name}
+      onChange={(e) => setData('guest_name', e.target.value)}
+      className="w-full border rounded-xl px-3 py-2 text-sm"
+    />
+
+    <input
+      type="email"
+      placeholder="Your email"
+      value={data.guest_email}
+      onChange={(e) => setData('guest_email', e.target.value)}
+      className="w-full border rounded-xl px-3 py-2 text-sm"
+      required
+    />
+
+    <button
+      type="submit"
+      disabled={processing}
+      className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold"
+    >
+      {processing ? 'Sending...' : 'Submit Issue'}
+    </button>
+  </form>
+)}
 
         {/* ── UPSELLS ── */}
         {upsells.length > 0 && (

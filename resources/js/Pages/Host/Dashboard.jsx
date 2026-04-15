@@ -107,6 +107,7 @@ export default function Dashboard() {
     limits,
     recentlyUpgraded,
     activities = [],
+    const { recentActivities } = usePage().props,
     stays = [],
     onboarding = { step: 0, skipped: false },
   } = usePage().props;
@@ -923,6 +924,8 @@ const IconBroom = () => (
                         </div>
                       </div>
 
+                      
+
                       {/* row 2 */}
                       <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-2">
                         {pkg.qr_code_path ? (
@@ -949,6 +952,20 @@ const IconBroom = () => (
                           <span>Delete</span>
                         </button>
                       </div>
+                      {/* Maintenance acitivity */}
+                      {recentActivities?.length > 0 && (
+                      <div className="mt-6 bg-white rounded-xl border p-4">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">
+                          Recent Activity
+                        </p>
+
+                        {recentActivities.map((a) => (
+                          <div key={a.id} className="text-sm text-gray-600 mb-1">
+                            {a.title}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     </div>
                   );
                 })}

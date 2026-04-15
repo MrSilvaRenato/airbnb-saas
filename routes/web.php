@@ -92,6 +92,10 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 // Push notifications subscribe
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('auth');
 
+//Guest can post maintenance request
+Route::post('/p/{slug}/maintenance', [GuestMaintenanceController::class, 'store'])
+    ->name('guest.maintenance.store');
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated — any role

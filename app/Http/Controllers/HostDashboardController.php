@@ -101,6 +101,10 @@ if ($a->action !== 'deleted') {
     // 6) Single render with all props (← no second return)
     return \Inertia\Inertia::render('Host/Dashboard', [
         'properties' => $props,
+        'recentActivities' => \App\Models\Activity::where('user_id', auth()->id())
+            ->latest()
+            ->take(5)
+            ->get(),
         'totals' => [
             'properties' => $propertyCount,
             'packages'   => $totalPackages,
