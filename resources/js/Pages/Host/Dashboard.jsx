@@ -107,7 +107,7 @@ export default function Dashboard() {
     limits,
     recentlyUpgraded,
     activities = [],
-  recentActivities,
+    recentActivities,
     stays = [],
     onboarding = { step: 0, skipped: false },
   } = usePage().props;
@@ -961,7 +961,9 @@ const IconBroom = () => (
 
                         {recentActivities.map((a) => (
                           <div key={a.id} className="text-sm text-gray-600 mb-1">
-                            {a.title}
+                 {a.action === 'guest_maintenance_reported'
+  ? `New guest maintenance request: ${JSON.parse(a.meta || '{}').issue_title || 'Issue reported'}`
+  : a.title}
                           </div>
                         ))}
                       </div>

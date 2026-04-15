@@ -722,7 +722,17 @@ const { data, setData, post, processing } = useForm({
 
       {/* ── MAIN CONTENT ─────────────────────── */}
       <div className="px-4 max-w-2xl mx-auto pb-32">
+{flash?.success && (
+  <div className="mt-6 bg-green-50 border border-green-200 text-green-700 rounded-2xl px-4 py-3 text-sm font-medium">
+    {flash.success}
+  </div>
+)}
 
+{flash?.error && (
+  <div className="mt-6 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 text-sm font-medium">
+    {flash.error}
+  </div>
+)}
         {/* ── QUICK TILES ── */}
         {(wifiName || lockCode || hostPhone || checkIn) && (
           <div className="-mx-4 px-4 mt-6">
@@ -872,7 +882,21 @@ const { data, setData, post, processing } = useForm({
     onSubmit={(e) => {
       e.preventDefault()
       const slug = window.location.pathname.split('/').pop()
-      post(`/p/${slug}/maintenance`)
+      post(`/p/${slug}/maintenance`, {
+  onSuccess: () => {
+    setShowMaintenance(false)
+    setData({
+      title: '',
+      description: '',
+      priority: 'medium',
+      category: '',
+      location: '',
+      guest_name: guest_name,
+      guest_email: guest_email,
+      guest_phone: '',
+    })
+  },
+})
     }}
     className="mt-4 bg-white border border-gray-200 rounded-2xl p-5 space-y-3"
   >
