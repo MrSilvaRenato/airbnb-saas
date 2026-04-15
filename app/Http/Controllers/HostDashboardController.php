@@ -102,10 +102,9 @@ if ($a->action !== 'deleted') {
     return \Inertia\Inertia::render('Host/Dashboard', [
         'properties' => $props,
         'recentActivities' => \App\Models\Activity::where('user_id', auth()->id())
-    ->where('action', 'guest_maintenance_reported')
-    ->latest()
-    ->take(5)
-    ->get(),
+            ->latest()
+            ->take(5)
+            ->get(),
         'totals' => [
             'properties' => $propertyCount,
             'packages'   => $totalPackages,
