@@ -13,7 +13,6 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutPageController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AnalyticsController;
-use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\ExportController;
@@ -27,6 +26,7 @@ use App\Http\Controllers\MessageTemplateController;
 use App\Http\Controllers\UpsellOfferController;
 use App\Http\Controllers\EngagementController;
 use App\Http\Middleware\EnsureHost;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -93,7 +93,7 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('auth');
 
 //Guest can post maintenance request
-Route::post('/p/{slug}/maintenance', [GuestMaintenanceController::class, 'store'])
+Route::post('/p/{slug}/maintenance', [\App\Http\Controllers\GuestMaintenanceController::class, 'store'])
     ->name('guest.maintenance.store');
 
 /*
