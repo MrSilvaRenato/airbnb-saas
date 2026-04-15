@@ -104,7 +104,8 @@ if ($a->action !== 'deleted') {
         'recentActivities' => \App\Models\Activity::where('user_id', auth()->id())
     ->where('action', 'guest_maintenance_reported')
     ->latest()
-    ->take(5),
+    ->take(5)
+    ->get(),
         'totals' => [
             'properties' => $propertyCount,
             'packages'   => $totalPackages,
