@@ -9,6 +9,7 @@ class Activity extends Model
 {
     protected $fillable = [
         'user_id', 'action', 'subject_type', 'subject_id', 'title', 'meta',
+        
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class Activity extends Model
             'subject_id'   => $subject?->id,
             'title'        => $title,
             'meta'         => $meta,
+            
         ]);
     }
 

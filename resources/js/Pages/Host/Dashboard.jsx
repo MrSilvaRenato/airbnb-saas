@@ -952,22 +952,7 @@ const IconBroom = () => (
                           <span>Delete</span>
                         </button>
                       </div>
-                      {/* Maintenance acitivity */}
-                      {recentActivities?.length > 0 && (
-                      <div className="mt-6 bg-white rounded-xl border p-4">
-                        <p className="text-sm font-semibold text-gray-700 mb-2">
-                          Recent Activity
-                        </p>
-
-                        {recentActivities.map((a) => (
-                          <div key={a.id} className="text-sm text-gray-600 mb-1">
-                 {a.action === 'guest_maintenance_reported'
-  ? `New guest maintenance request: ${JSON.parse(a.meta || '{}').issue_title || 'Issue reported'}`
-  : a.title}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                     
                     </div>
                   );
                 })}
@@ -1099,7 +1084,22 @@ const IconBroom = () => (
           </div> */}
         </div>
       </div>
+ {/* Maintenance acitivity */}
+                      {recentActivities?.length > 0 && (
+                      <div className="mt-6 bg-white rounded-xl border p-4">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">
+                          Recent Activity
+                        </p>
 
+                        {recentActivities.map((a) => (
+                          <div key={a.id} className="text-sm text-gray-600 mb-1">
+                 {a.action === 'guest_maintenance_reported'
+  ? `New guest maintenance request: ${JSON.parse(a.meta || '{}').issue_title || 'Issue reported'}`
+  : a.title}
+                          </div>
+                        ))}
+                      </div>
+                    )}
       {/* Upcoming Stays */}
       <div className="rounded-2xl border bg-white p-4">
         <div className="flex items-center justify-between mb-3">
