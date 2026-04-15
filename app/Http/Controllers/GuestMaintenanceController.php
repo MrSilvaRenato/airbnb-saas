@@ -22,7 +22,7 @@ class GuestMaintenanceController extends Controller
             'guest_phone' => 'nullable|string',
         ]);
 
-        MaintenanceTask::create([
+        $task = MaintenanceTask::create([
             'property_id'              => $package->property_id,
             'welcome_package_id'       => $package->id,
             'title'                    => $validated['title'],
@@ -40,23 +40,7 @@ class GuestMaintenanceController extends Controller
             'submitted_at'             => now(),
         ]);
 
-                \App\Models\Activity::create([
-            'user_id'      => $package->property->user_id,
-            'action'       => 'guest_maintenance_reported',
-            'subject_type' => \App\Models\MaintenanceTask::class,
-            'subject_id'   => $task->id,
-            'title'        => 'New guest maintenance request received',
-            'meta'         => json_encode([
-                'package_id'   => $package->id,
-                'property_id'  => $package->property_id,
-                'property'     => $package->property->title ?? null,
-                'guest_name'   => $validated['guest_name'] ?? $package->guest_first_name,
-                'guest_email'  => $validated['guest_email'],
-                'priority'     => $validated['priority'],
-                'category'     => $validated['category'] ?? null,
-                'issue_title'  => $validated['title'],
-            ]),
-        ]);
+        
 
         return back()->with('success', 'Issue reported successfully');
     }
