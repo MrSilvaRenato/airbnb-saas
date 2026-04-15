@@ -107,7 +107,7 @@ export default function Dashboard() {
     limits,
     recentlyUpgraded,
     activities = [],
-    const { recentActivities } = usePage().props,
+  recentActivities,
     stays = [],
     onboarding = { step: 0, skipped: false },
   } = usePage().props;
